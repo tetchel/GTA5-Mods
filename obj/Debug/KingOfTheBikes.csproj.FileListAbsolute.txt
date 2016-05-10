@@ -1,0 +1,7 @@
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\obj\Debug\KingOfTheBikes.csprojResolveAssemblyReference.cache
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\bin\Debug\KingOfTheBikes.dll
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\bin\Debug\KingOfTheBikes.pdb
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\bin\Debug\ScriptHookVDotNet.dll
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\bin\Debug\ScriptHookVDotNet.xml
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\obj\Debug\KingOfTheBikes.dll
+E:\Tim\Programs\GTA5\csharp\KingOfTheBikes\obj\Debug\KingOfTheBikes.pdb
