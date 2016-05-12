@@ -13,6 +13,7 @@ namespace KingOfTheBikes {
 
     public class KingOfTheBikes : Script {
         private bool cops = false;
+        private bool spawn_foes = true;
         private GTA.Ped player;
         
         private bool king = false;
@@ -32,10 +33,10 @@ namespace KingOfTheBikes {
 
         private const int INTERVAL = 1000;
         private const int GET_ON_BIKE_TIME = 16;
+        private const int LONG_MESSAGE_DURATION = 5000;
         private const float FIND_PEASANT_RADIUS = 100f;
         private const float PEASANT_ESCAPE_RADIUS = 2000f;
 
-        private bool spawn_foes = true;
 
         private int current_level = 0;
 
@@ -74,7 +75,7 @@ namespace KingOfTheBikes {
 
                     if (get_on_bike_timer == 0) {
                         reignEnded();
-                        UI.ShowSubtitle("~r~You should have gotten back on your bike.");
+                        UI.ShowSubtitle("~r~You should have gotten back on your bike.", LONG_MESSAGE_DURATION);
                     }
                 }
                 //reset timer when player gets back on a bike
@@ -82,7 +83,7 @@ namespace KingOfTheBikes {
                     get_on_bike_timer = GET_ON_BIKE_TIME;
                 }
 
-                //only check every other second. premature optimization ftw
+                //only check every other second. idk if this makes a significant difference.
                 if (clock % 2 == 0) {
                     GTA.Ped[] nearby = GTA.World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
                     foreach (GTA.Ped p in nearby) {
@@ -90,11 +91,13 @@ namespace KingOfTheBikes {
                             GTA.Blip b = p.AddBlip();
                             b.Color = BlipColor.Green;
                             p.IsEnemy = true;
+                            p.IsPersistent = true;
                             foes.Add(new Target(p, p.CurrentVehicle, b, false));
                         }
                     }
                 }
 
+                Vector2 player2d = new Vector2(player.Position.X, player.Position.Y);
                 //check for and remove dead enemies
                 for (int i = foes.Count - 1; i >= 0; i--) {
                     if (!foes[i].p.IsAlive) {
@@ -104,14 +107,19 @@ namespace KingOfTheBikes {
                             peasant_kills++;
 
                         removeFoe(foes[i]);
-                        // you get 100 bullets for killing someone. why not
-                        /*if(player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
-                            player.Weapons.
-                        }*/
+                        // you get bullets for killing someone. why not
+                        //AP pistol would work too
+                        if(player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
+                            Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)WeaponHash.MicroSMG, 50);
+                        }
                     }
-                    else if(!foes[i].isAggro && GTA.Math.Vector3.Distance2D(foes[i].p.Position, player.Position) > PEASANT_ESCAPE_RADIUS) {
-                        UI.Notify("You let a ~g~peasant escape your kingdom.", true);
-                        reignEnded();
+                    else if(!foes[i].isAggro) {
+                        Vector2 peasant2d = new Vector2(foes[i].p.Position.X, foes[i].p.Position.Y);                        
+                        if (Vector2.Distance(player2d, peasant2d) > PEASANT_ESCAPE_RADIUS) {
+                            removeFoe(foes[i]);
+                            //UI.ShowSubtitle("~r~You let a peasant escape your kingdom.", 2000);
+                            //reignEnded();
+                        }
                     }
                 }
 
@@ -128,6 +136,7 @@ namespace KingOfTheBikes {
                     foe.IsEnemy = true;
                     foe.CanSwitchWeapons = true;
                     foe.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 0);
+                    foe.DrivingStyle = DrivingStyle.AvoidTrafficExtremely;
 
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, foe.Handle, foegroup);
 
