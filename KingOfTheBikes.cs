@@ -1,4 +1,4 @@
-﻿[assembly: Rage.Attributes.Plugin("King of the Bikes", Description = "Rule the Road", Author = "TimE")]
+﻿//[assembly: Rage.Attributes.Plugin("King of the Bikes", Description = "Rule the Road", Author = "TimE")]
 
 namespace KingOfTheBikes {
     using System;
@@ -14,9 +14,11 @@ namespace KingOfTheBikes {
     public class KingOfTheBikes : Script {
         private bool cops = false;
         private bool spawn_foes = true;
-        private GTA.Ped player;
+        private static GTA.Ped player;
         
         private bool king = false;
+        private bool ready_to_spawn = true;
+
         //these fields are reset each game
         //in secs
         private long time_king = 0;
@@ -26,26 +28,28 @@ namespace KingOfTheBikes {
         private int peasant_kills = 0;
         private List<Target> foes = new List<Target>(50);
         private int get_on_bike_timer = GET_ON_BIKE_TIME;
-
-        private Random rng = new Random();
-
-        private int foegroup;
+        private int num_of_living_enemies = 0;
+        private int clock_to_spawn_enemies_at = -1;
+        private float enemy_accuracy_mult = ENEMY_ACCURACY_INIT;
+        
+        //public get, private set, how do?
+        public static int foegroup { get; set; }
 
         private const int INTERVAL = 1000;
         private const int GET_ON_BIKE_TIME = 16;
         private const int LONG_MESSAGE_DURATION = 5000;
         private const float FIND_PEASANT_RADIUS = 100f;
-        private const float PEASANT_ESCAPE_RADIUS = 2000f;
-
-
-        private int current_level = 0;
+        private const float PEASANT_ESCAPE_RADIUS = 1000f;
+        //vary by difficulty
+        private const float ENEMY_ACCURACY_INIT = 0.75f;
+        private const int NUM_LEVELS = 2;
+        
+        private int current_level = 1;
 
         public KingOfTheBikes() {
-            //ticks every 5s
             this.Interval = INTERVAL;
             this.Tick += onTick;
             this.KeyUp += onKeyUp;
-            this.KeyDown += onKeyDown;
 
             player = GTA.Game.Player.Character;
 
@@ -60,93 +64,103 @@ namespace KingOfTheBikes {
                 clock %= 10;        //# ticks in a cycle
 
                 time_king++;
-                //TODO hack (this shouldn't need to be done more than once!)
-                if (clock % 5 == 0)
+                //HACK (this shouldn't need to be done more than once!)
+                if (clock == 0)
                     GTA.Game.MaxWantedLevel = 0;
 
                 UI.ShowSubtitle("~b~" + secsToTime(time_king) + "~s~, ~r~" + kills + " ~s~rebels destroyed, ~g~" + peasant_kills + " ~s~peasants put down", INTERVAL);
 
                 //player can't be off bike for more than GET_ON_BIKE_TIME ticks
                 if (!isOnBike(player)) {
-                    if(get_on_bike_timer < GET_ON_BIKE_TIME && player.IsAlive)
-                        UI.ShowSubtitle("GET BACK ON YOUR BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
-
                     get_on_bike_timer--;
-
+                    if (get_on_bike_timer < GET_ON_BIKE_TIME && player.IsAlive)
+                        UI.ShowSubtitle("GET BACK ON A BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
+                    
                     if (get_on_bike_timer == 0) {
                         reignEnded();
-                        UI.ShowSubtitle("~r~You should have gotten back on your bike.", LONG_MESSAGE_DURATION);
+                        UI.ShowSubtitle("~r~You should have gotten back on a bike.", LONG_MESSAGE_DURATION);
                     }
                 }
                 //reset timer when player gets back on a bike
                 if (get_on_bike_timer != GET_ON_BIKE_TIME && isOnBike(player)) {
                     get_on_bike_timer = GET_ON_BIKE_TIME;
                 }
-
-                //only check every other second. idk if this makes a significant difference.
-                if (clock % 2 == 0) {
-                    GTA.Ped[] nearby = GTA.World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
-                    foreach (GTA.Ped p in nearby) {
-                        if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
-                            GTA.Blip b = p.AddBlip();
+                
+                //Mark nearby on-bike peds as peasants
+                //TODO unmarked peds will not count as kills (if the player is too fast)
+                GTA.Ped[] nearby = GTA.World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
+                foreach (GTA.Ped p in nearby) {
+                    if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
+                        //could remove blip for more difficulty
+                        /*Blip b;
+                        if ((b = p.CurrentBlip) != null) {
+                            b = p.AddBlip();
                             b.Color = BlipColor.Green;
-                            p.IsEnemy = true;
-                            p.IsPersistent = true;
-                            foes.Add(new Target(p, p.CurrentVehicle, b, false));
-                        }
+                        }*/
+                        p.IsEnemy = true;
+                        p.IsPersistent = true;
+                        foes.Add(new Target(p, p.CurrentVehicle, null, false));
                     }
                 }
 
                 Vector2 player2d = new Vector2(player.Position.X, player.Position.Y);
-                //check for and remove dead enemies
-                for (int i = foes.Count - 1; i >= 0; i--) {
+                //update foes
+                for (int i = foes.Count - 1; i >= 0; i--) { 
+                    //check for and remove dead enemies
                     if (!foes[i].p.IsAlive) {
-                        if (foes[i].isAggro)
+                        if (foes[i].isAggro) {
                             kills++;
+                            num_of_living_enemies--;
+                            //and you get a new vest every 10 foe kills
+                            if (kills % 10 == 0) {
+                                player.Armor = 100;
+                                UI.Notify("Armor repaired");
+                            }
+                        }
                         else
                             peasant_kills++;
 
                         removeFoe(foes[i]);
                         // you get bullets for killing someone. why not
                         //AP pistol would work too
-                        if(player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
+                        if (player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
                             Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)WeaponHash.MicroSMG, 50);
                         }
                     }
+                    //check for and remove peasants that are too far away
                     else if(!foes[i].isAggro) {
                         Vector2 peasant2d = new Vector2(foes[i].p.Position.X, foes[i].p.Position.Y);                        
                         if (Vector2.Distance(player2d, peasant2d) > PEASANT_ESCAPE_RADIUS) {
                             removeFoe(foes[i]);
-                            //UI.ShowSubtitle("~r~You let a peasant escape your kingdom.", 2000);
+                            //UI.ShowSubtitle("~r~You let a peasant escape your kingdom.", LONG_MESSAGE_DURATION);
                             //reignEnded();
                         }
                     }
                 }
-
+                
                 //enemy spawn code
-                if (spawn_foes && clock == 0) {
-                    GTA.Math.Vector3 spawn_loc = getFoeSpawnLoc();
+                if (spawn_foes && ready_to_spawn && num_of_living_enemies == 0) {
+                    ready_to_spawn = false;
+                    if (clock >= 5)
+                        clock_to_spawn_enemies_at = clock - 5;
+                    else
+                        clock_to_spawn_enemies_at = clock + 5;                    
+                }
 
-                    var vmodel = new GTA.Model(VehicleHash.PCJ);
-                    GTA.Vehicle v = GTA.World.CreateVehicle(vmodel, spawn_loc);
-                    
-                    var ballamodel = new GTA.Model(PedHash.BallaEast01GMY);
-                    GTA.Ped foe = GTA.World.CreatePed(ballamodel, spawn_loc);
-                    foe.Weapons.Give(GTA.Native.WeaponHash.MicroSMG, 1000, true, true);
-                    foe.IsEnemy = true;
-                    foe.CanSwitchWeapons = true;
-                    foe.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 0);
-                    foe.DrivingStyle = DrivingStyle.AvoidTrafficExtremely;
+                if(clock == clock_to_spawn_enemies_at) {
+                    UI.Notify("Level " + current_level, true);
+                    ready_to_spawn = true;
+                    clock_to_spawn_enemies_at = -1;
 
-                    Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, foe.Handle, foegroup);
+                    Target[] newfoes = EnemySpawner.spawn_next_level(current_level);
 
-                    Function.Call(Hash.SET_PED_INTO_VEHICLE, foe, v, -1);
-                    foe.Task.FightAgainst(player);
+                    if (current_level < NUM_LEVELS)
+                        current_level++;
 
-                    GTA.Blip b = foe.AddBlip();
-                    b.Color = BlipColor.Red;
-
-                    foes.Add(new Target(foe, v, b, true));
+                    foreach (Target t in newfoes) {
+                        foes.Add(t);
+                        num_of_living_enemies++;
+                    }
                 }
             }
 
@@ -155,13 +169,17 @@ namespace KingOfTheBikes {
             }
         }
         
+        //perform cleanup on dead enemy or on all foes when dethroned
         private void removeFoe(Target e) {
+            //e.p.Task.ClearAllImmediately();
             e.p.MarkAsNoLongerNeeded();
             e.v.MarkAsNoLongerNeeded();
-            e.b.Remove();
+            if(e.b != null)
+                e.b.Remove();
             foes.Remove(e);
         }
 
+        //returns if a ped is in the list of Targets
         private bool isFoe(Ped p) {
             foreach(Target e in foes) {
                 if(e.p.Equals(p)) {
@@ -171,26 +189,20 @@ namespace KingOfTheBikes {
             return false;
         }
 
-        /*static void drawKingUI(object sender, GraphicsEventArgs e) {
-            //king UI here
-            //e.Graphics.DrawText(secsToTime(time_king), "Arial", 28f, new PointF(Rage.Game.Resolution.Width/60, Rage.Game.Resolution.Height/60), Color.FloralWhite);
-        }*/
-
-        private void onKeyDown(object sender, System.Windows.Forms.KeyEventArgs e) {
-        }
-
         private void onKeyUp(object sender, System.Windows.Forms.KeyEventArgs e) {
             if (e.KeyCode == Keys.NumPad3) {
-                if (!king) {
+                if (!king) {                    
                     if (isOnBike(player)) {
+                        //new king code
                         UI.Notify("You are now the King of the Bikes. Hunt down and destroy those who oppose you!");
                         king = true;
-                        clock = 0;
                         player.Armor = 100;
                         //stop player from switching characters somehow
                         //Rage.Game.RawFrameRender += drawKingUI;
-                        if (!cops)
+                        if (!cops) {
                             GTA.Game.MaxWantedLevel = 0;
+                            Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
+                        }
                     }
                     else {
                         UI.Notify("You can't be King of the Bikes if you aren't on a bike...");
@@ -205,6 +217,7 @@ namespace KingOfTheBikes {
             }
         }
 
+        //this better be self documenting
         private bool isOnBike(GTA.Ped p) {
             GTA.Vehicle v = p.CurrentVehicle;
             return  v != null &&
@@ -212,13 +225,18 @@ namespace KingOfTheBikes {
         }
 
         //called when you turn off king mode or die
+        //outputs the scores of your previous run and resets variables
         private void reignEnded() {
             UI.Notify("Your reign has come to an end. ~n~Time: " + secsToTime(time_king) + "~n~Foe Kills: " + kills + "~n~Peasant Kills: " + peasant_kills);
             king = false;
+            ready_to_spawn = true;
             time_king = 0;
             clock = -1;
             kills = 0;
             peasant_kills = 0;
+            get_on_bike_timer = GET_ON_BIKE_TIME;
+            num_of_living_enemies = 0;
+            current_level = 1;
             //Rage.Game.RawFrameRender -= drawKingUI;
             GTA.Game.MaxWantedLevel = 5;
 
@@ -227,43 +245,9 @@ namespace KingOfTheBikes {
             }
         }
 
-        private GTA.Math.Vector3 getFoeSpawnLoc() {
-            float dist_from_player = -rng.Next(150, 250);
-            //sometimes enemy spawns in front of you. maybe could make this more interesting
-            if(rng.Next(0,3) == 0) {
-                dist_from_player = -dist_from_player;
-            }
-            GTA.Math.Vector3 spawn_loc = player.Position + player.ForwardVector * dist_from_player;
-
-            return getVehicleSafeCoord(spawn_loc, true, 0);
-        }
-
-        private GTA.Math.Vector3 getVehicleSafeCoord(GTA.Math.Vector3 pos, bool onGround, int flags) {
-            OutputArgument oa = new OutputArgument();
-            if (Function.Call<bool>(Hash.GET_CLOSEST_VEHICLE_NODE, pos.X, pos.Y, pos.Z, oa, 1, 3.0, 0)) {
-                return oa.GetResult<GTA.Math.Vector3>();
-            }
-            else {
-                return GTA.Math.Vector3.Zero;
-            }
-        }
-
-        private static void log(string s) {
-            using (System.IO.StreamWriter file =
-                        new System.IO.StreamWriter(@"E:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V\scripts\A LOG.txt", true)) {
-                file.WriteLine(s);
-            }
-        }
-
-        private static void log(GTA.Math.Vector3 v, string label) {
-            string output = string.Format("{0}: X: {1} Y: {2} Z: {3}", label.ToUpper(), v.X, v.Y, v.Z);
-            log(output);
-        }
-
         private static String secsToTime(long secs) {
             //format this nicer
             return TimeSpan.FromSeconds(secs).ToString(@"mm\:ss");
         }
-
     }
 }
