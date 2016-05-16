@@ -65,8 +65,10 @@ namespace KingOfTheBikes {
 
                 time_king++;
                 //HACK (this shouldn't need to be done more than once!)
-                if (clock == 0)
+                if (clock % 5 == 0) {
+                    Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
                     GTA.Game.MaxWantedLevel = 0;
+                }
 
                 UI.ShowSubtitle("~b~" + secsToTime(time_king) + "~s~, ~r~" + kills + " ~s~rebels destroyed, ~g~" + peasant_kills + " ~s~peasants put down", INTERVAL);
 
@@ -74,7 +76,7 @@ namespace KingOfTheBikes {
                 if (!isOnBike(player)) {
                     get_on_bike_timer--;
                     if (get_on_bike_timer < GET_ON_BIKE_TIME && player.IsAlive)
-                        UI.ShowSubtitle("GET BACK ON A BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
+                        UI.ShowSubtitle("GET ON A BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
                     
                     if (get_on_bike_timer == 0) {
                         reignEnded();
@@ -111,7 +113,7 @@ namespace KingOfTheBikes {
                         if (foes[i].isAggro) {
                             kills++;
                             num_of_living_enemies--;
-                            //and you get a new vest every 10 foe kills
+                            //and you get a new vest every 10 foe kills (could be every level or smtg)
                             if (kills % 10 == 0) {
                                 player.Armor = 100;
                                 UI.Notify("Armor repaired");
@@ -191,7 +193,7 @@ namespace KingOfTheBikes {
 
         private void onKeyUp(object sender, System.Windows.Forms.KeyEventArgs e) {
             if (e.KeyCode == Keys.NumPad3) {
-                if (!king) {                    
+                if (!king) {
                     if (isOnBike(player)) {
                         //new king code
                         UI.Notify("You are now the King of the Bikes. Hunt down and destroy those who oppose you!");
