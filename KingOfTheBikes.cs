@@ -14,7 +14,7 @@ namespace KingOfTheBikes {
     public class KingOfTheBikes : Script {
         private bool cops = false;
         private bool spawn_foes = true;
-        private static GTA.Ped player;
+        private GTA.Ped player;
         
         private bool king = false;
         private bool ready_to_spawn = true;
