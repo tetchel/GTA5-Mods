@@ -9,9 +9,9 @@ using GTA.Math;
 
 namespace KingOfTheBikes {
     class EnemySpawner {
-        private static Random rng = new Random();
+        private static Random rng = new Random(DateTime.Now.Millisecond);
 
-        public static Target[] spawn_next_level(int level) {
+        public static Target[] spawn_level(int level) {
             switch(level) {
                 case 1:
                     return level_1();
@@ -31,8 +31,13 @@ namespace KingOfTheBikes {
 
             //ballas are uncoordinated - they spawn in different spots!
             for (int i = 0; i < ret.Length; i++) {
-                UI.Notify("Goon #" + i);
                 Vector3 loc = getFoeSpawnLoc();
+                //spawn em i meters apart so they don't get stuck in each other!
+                if(i % 2 == 0)
+                    loc.X += i;
+                else 
+                    loc.X -= i;
+                                
                 Ped p = GTA.World.CreatePed(ballamodel, loc);
                 Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
                 ret[i] = applyFoeSettings(p, v, 0);
@@ -50,6 +55,7 @@ namespace KingOfTheBikes {
             //ballas are uncoordinated - they spawn in different spots!
             for (int i = 0; i < ret.Length; i++) {
                 Vector3 loc = getFoeSpawnLoc();
+                Logger.log(loc, "Balla #" + i);
                 Ped p = GTA.World.CreatePed(ballamodel, loc);
                 Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
                 ret[i] = applyFoeSettings(p, v, 0);
@@ -79,16 +85,16 @@ namespace KingOfTheBikes {
 
         //spawn randomizer constants
         private const int   MIN_FROM_PLAYER_DIST = 150,
-                            MAX_FROM_PLAYER_DIST = 300,
+                            MAX_FROM_PLAYER_DIST = 250,
                             //take the reciprocal to get chance enemies spawn in front of player
                             FRONT_SPAWN_CHANCE = 3;
 
         //returns a randomized location MIN-MAX distance behind player, with a 1/FRONT_SPAWN_CHANCE chance to be in front of player
         public static GTA.Math.Vector3 getFoeSpawnLoc() {
             //enemies spawn this many - this many units behind the player
-            float dist_from_player = - new Random().Next(MIN_FROM_PLAYER_DIST, MAX_FROM_PLAYER_DIST);
+            float dist_from_player = -rng.Next(MIN_FROM_PLAYER_DIST, MAX_FROM_PLAYER_DIST);
             //if they're coordinated
-            if (rng.Next(1, FRONT_SPAWN_CHANCE) == 0) {
+            if (rng.Next(0, FRONT_SPAWN_CHANCE) == 0) {
                 dist_from_player = -dist_from_player;
             }
             //TODO if they're not, do more randomization
@@ -108,12 +114,12 @@ namespace KingOfTheBikes {
                 Vector3 result = oa.GetResult<GTA.Math.Vector3>();
                 float diff = Vector3.Distance(result, pos);
                 //could define another constant for this
-                if (diff > MAX_FROM_PLAYER_DIST) {
+                if (diff > MAX_FROM_PLAYER_DIST*2) {
                     if (Function.Call<bool>(Hash.GET_CLOSEST_VEHICLE_NODE, pos.X, pos.Y, pos.Z, oa, 1, 3.0, 0)) {
                         return oa.GetResult<GTA.Math.Vector3>();
                     }
                     else {
-                        Logger.log("ERROR2 getting vehicle safe coord");
+                        Logger.log("ERROR getting vehicle safe coord");
                         return GTA.Math.Vector3.Zero;
                     }
                 }
@@ -122,7 +128,7 @@ namespace KingOfTheBikes {
                 }
             }
             else {
-                Logger.log("ERROR getting vehicle safe coord");
+                Logger.log("ERROR2 getting vehicle safe coord");
                 return GTA.Math.Vector3.Zero;
             }
         }

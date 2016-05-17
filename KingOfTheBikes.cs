@@ -60,6 +60,7 @@ namespace KingOfTheBikes {
 
         private void onTick(object sender, EventArgs e) {
             if(king) {
+                player.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 1);
                 clock++;                                
                 clock %= 10;        //# ticks in a cycle
 
@@ -93,6 +94,7 @@ namespace KingOfTheBikes {
                 GTA.Ped[] nearby = GTA.World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
                 foreach (GTA.Ped p in nearby) {
                     if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
+                        //need to mark aggressive peds. for some reason this removes their blip.
                         //could remove blip for more difficulty
                         /*Blip b;
                         if ((b = p.CurrentBlip) != null) {
@@ -101,7 +103,7 @@ namespace KingOfTheBikes {
                         }*/
                         p.IsEnemy = true;
                         p.IsPersistent = true;
-                        foes.Add(new Target(p, p.CurrentVehicle, null, false));
+                        foes.Add(new Target(p, p.CurrentVehicle, p.CurrentBlip, false));
                     }
                 }
 
@@ -123,11 +125,23 @@ namespace KingOfTheBikes {
                             peasant_kills++;
 
                         removeFoe(foes[i]);
-                        // you get bullets for killing someone. why not
+                        // you get ammo for killing someone. why not
                         //AP pistol would work too
-                        if (player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
+                        /*if (player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
                             Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)WeaponHash.MicroSMG, 50);
+                        }*/
+                        OutputArgument oa = new OutputArgument();
+                        Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, oa, true);
+                        int weapon_int = oa.GetResult<int>();
+                        WeaponHash wp = (WeaponHash)weapon_int;
+                        Logger.log("Weapon: " + wp.ToString());
+                        int ammo_to_give = 1;
+                        //you get more ammo for the driveby guns
+                        if (wp == WeaponHash.MicroSMG   || wp == WeaponHash.APPistol        || wp == WeaponHash.CombatPistol || 
+                            wp == WeaponHash.Pistol     || wp == WeaponHash.SawnOffShotgun  || wp == WeaponHash.HeavyPistol) {
+                            ammo_to_give = 50;
                         }
+                        Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)wp, ammo_to_give);
                     }
                     //check for and remove peasants that are too far away
                     else if(!foes[i].isAggro) {
@@ -142,6 +156,7 @@ namespace KingOfTheBikes {
                 
                 //enemy spawn code
                 if (spawn_foes && ready_to_spawn && num_of_living_enemies == 0) {
+                    player.Health = player.MaxHealth;
                     ready_to_spawn = false;
                     if (clock >= 5)
                         clock_to_spawn_enemies_at = clock - 5;
@@ -154,7 +169,7 @@ namespace KingOfTheBikes {
                     ready_to_spawn = true;
                     clock_to_spawn_enemies_at = -1;
 
-                    Target[] newfoes = EnemySpawner.spawn_next_level(current_level);
+                    Target[] newfoes = EnemySpawner.spawn_level(current_level);
 
                     if (current_level < NUM_LEVELS)
                         current_level++;
@@ -164,16 +179,17 @@ namespace KingOfTheBikes {
                         num_of_living_enemies++;
                     }
                 }
-            }
 
-            if(king && !player.IsAlive) {
-                reignEnded();
+                if (!player.IsAlive) {
+                    reignEnded();
+                }
             }
         }
         
         //perform cleanup on dead enemy or on all foes when dethroned
         private void removeFoe(Target e) {
             //e.p.Task.ClearAllImmediately();
+            e.p.Task.ClearAll();
             e.p.MarkAsNoLongerNeeded();
             e.v.MarkAsNoLongerNeeded();
             if(e.b != null)
@@ -189,34 +205,6 @@ namespace KingOfTheBikes {
                 }
             }
             return false;
-        }
-
-        private void onKeyUp(object sender, System.Windows.Forms.KeyEventArgs e) {
-            if (e.KeyCode == Keys.NumPad3) {
-                if (!king) {
-                    if (isOnBike(player)) {
-                        //new king code
-                        UI.Notify("You are now the King of the Bikes. Hunt down and destroy those who oppose you!");
-                        king = true;
-                        player.Armor = 100;
-                        //stop player from switching characters somehow
-                        //Rage.Game.RawFrameRender += drawKingUI;
-                        if (!cops) {
-                            GTA.Game.MaxWantedLevel = 0;
-                            Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
-                        }
-                    }
-                    else {
-                        UI.Notify("You can't be King of the Bikes if you aren't on a bike...");
-                    }
-                }
-                else {
-                    reignEnded();
-                }
-            }
-            else if (e.KeyCode == Keys.NumPad0) {
-                UI.Notify("The script has not yet crashed");
-            }
         }
 
         //this better be self documenting
@@ -246,10 +234,84 @@ namespace KingOfTheBikes {
                 removeFoe(foes[i]);
             }
         }
-
+        
         private static String secsToTime(long secs) {
             //format this nicer
             return TimeSpan.FromSeconds(secs).ToString(@"mm\:ss");
+        }
+
+        private void onKeyUp(object sender, System.Windows.Forms.KeyEventArgs e) {
+            if (e.KeyCode == Keys.NumPad3) {
+                if (!king) {
+                    if (isOnBike(player)) {
+                        //new king code
+                        UI.Notify("You are now the King of the Bikes. Hunt down and destroy those who oppose you!");
+                        king = true;
+                        player.Armor = 100;
+                        //stop player from switching characters somehow
+                        //Rage.Game.RawFrameRender += drawKingUI;
+                        if (!cops) {
+                            GTA.Game.MaxWantedLevel = 0;
+                            Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
+                        }
+                    }
+                    else {
+                        UI.Notify("You can't be King of the Bikes if you aren't on a bike...");
+                    }
+                }
+                else {
+                    reignEnded();
+                }
+            }
+            else if (e.KeyCode == Keys.NumPad0) {
+                UI.Notify("The script has not yet crashed");
+            }
+
+            //fun stuff
+            else if (e.KeyCode == Keys.End) {
+                spawnThrone();
+            }
+
+            else if (e.KeyCode == Keys.NumPad5) {
+                UI.Notify("Wanted level removed");
+                Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, 0, false);
+            }
+
+            else if (e.KeyCode == Keys.NumPad9) {
+                //toggle invincibility
+                bool isInvincible = Function.Call<bool>(Hash.GET_PLAYER_INVINCIBLE, Game.Player);
+                UI.Notify("You are " + (isInvincible ? "no longer" : "now") + " invincible");
+                Function.Call(Hash.SET_PLAYER_INVINCIBLE, Game.Player, !isInvincible);
+            }
+        }
+
+        private void spawnThrone() {
+            Vehicle v = World.CreateVehicle(VehicleHash.Bati, player.GetOffsetInWorldCoords(new Vector3(0, 5, 0)));
+
+            v.DirtLevel = 0f;
+            v.CustomPrimaryColor = Color.FromArgb(0, 51, 204);
+            v.CustomSecondaryColor = Color.Gold;
+            v.NumberPlate = "NEED4SPD";
+
+            v.InstallModKit();
+            v.SetMod(VehicleMod.Armor, 5, true);
+            v.SetMod(VehicleMod.Brakes, 3, true);
+            v.SetMod(VehicleMod.Horns, 1, true);
+            v.SetMod(VehicleMod.PlateHolder, 4, true);
+            v.SetMod(VehicleMod.Transmission, 3, true);
+            //v.SetMod(VehicleMod., 5, true);           //turbo?
+
+            v.SetMod(VehicleMod.FrontWheels, 9, true);
+            v.SetMod(VehicleMod.BackWheels, 9, true);
+            //v.SetMod(VehicleMod.Ti)                   //tires?
+
+            v.CanTiresBurst = false;
+            v.CanWheelsBreak = false;
+            v.EngineCanDegrade = false;
+            //v.EnginePowerMultiplier = 1.5f;
+
+            v.PlaceOnGround();
+            v.MarkAsNoLongerNeeded();
         }
     }
 }
