@@ -42,10 +42,8 @@ namespace KingOfTheBikes {
         private const float PEASANT_ESCAPE_RADIUS = 1000f;
         //vary by difficulty
         private const float ENEMY_ACCURACY_INIT = 0.75f;
-
-        public const int NUM_LEVELS = 2;
-        
-        private int current_level = 1;
+                
+        private int current_level = 0;
 
         public KingOfTheBikes() {
             this.Interval = INTERVAL;
@@ -135,7 +133,7 @@ namespace KingOfTheBikes {
                         Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, oa, true);
                         int weapon_int = oa.GetResult<int>();
                         WeaponHash wp = (WeaponHash)weapon_int;
-                        Logger.log("Weapon: " + wp.ToString());
+
                         int ammo_to_give = 1;
                         //you get more ammo for the driveby guns
                         if (wp == WeaponHash.MicroSMG   || wp == WeaponHash.APPistol        || wp == WeaponHash.CombatPistol || 
@@ -166,13 +164,14 @@ namespace KingOfTheBikes {
                 }
 
                 if(clock == clock_to_spawn_enemies_at) {
-                    UI.Notify("Level " + current_level, true);
+                    UI.Notify("Level " + (current_level+1), true);
                     ready_to_spawn = true;
                     clock_to_spawn_enemies_at = -1;
 
                     Target[] newfoes = EnemySpawner.spawn_level(current_level);
 
-                    if (current_level < NUM_LEVELS)
+                    //should rethink the way levels are selected (eg. last a certain amount of time & spawn enemies every x seconds)
+                    if (current_level < EnemySpawner.NUM_LEVELS-1)
                         current_level++;
 
                     foreach (Target t in newfoes) {
@@ -227,7 +226,7 @@ namespace KingOfTheBikes {
             peasant_kills = 0;
             get_on_bike_timer = GET_ON_BIKE_TIME;
             num_of_living_enemies = 0;
-            current_level = 1;
+            current_level = 0;
             //Rage.Game.RawFrameRender -= drawKingUI;
             GTA.Game.MaxWantedLevel = 5;
 

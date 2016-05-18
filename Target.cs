@@ -9,98 +9,82 @@ using GTA.Math;
 
 namespace KingOfTheBikes {
     class EnemySpawner {
+        public const int NUM_LEVELS = 5;
+
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
         //compress these into one data structure
-        static int[] level_mins = { 1, 1, 2, 2 },
-                level_maxs = { 2, 3, 4, 4 },
-                power_pts = { 100, 150, 200, 250 };
+        private static int[]    level_mins = { 1, 1, 1, 2, 2 },
+                        level_maxs = { 2, 3, 4, 3, 4 },
+                        //power_pts[i] must be g.t. level_maxs[i]*100
+                        power_pts = { 200, 300, 400, 500, 600};
 
-        //maybe try putting this array in KOTB or another class entirely
-        public void howDoYouInitializeThisArray() {
-            Model[][] possible_foes = new Model[KingOfTheBikes.NUM_LEVELS][];
-
-            possible_foes[0] = { PedHash.BallaEast01GMY, PedHash.BallaOrig01GMY };
-        }
+        private static Model[][] possible_foes = new Model[][] {
+            new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 },
+            new Model[] { PedHash.BallaOrig01GMY, PedHash.BallaEast01GMY, PedHash.Ballas01GFY, PedHash.BallaSout01GMY },
+            new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 },
+            new Model[] { PedHash.BallaOrig01GMY, PedHash.BallaEast01GMY, PedHash.Ballas01GFY, PedHash.BallaSout01GMY },
+            new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 }
+        };
 
         public static Target[] spawn_level(int level) {
-            switch(level) {
-                case 1:
-                    int numfoes = rng.Next(level_mins[level], level_maxs[level]+1);
-                    //take away 50 pp for each extra enemy spawned
-                    int pp = power_pts[level] - (numfoes - level_mins[level]) * 50;
-                    return init_foes(numfoes, pp);
-                //wont happen
-                default:
-                    return null;
-            }
+            int numfoes = rng.Next(level_mins[level], level_maxs[level]+1);
+            //take away 50 pp for each extra enemy spawned
+            int pp = power_pts[level] - (numfoes - level_mins[level]) * 100;
+            Logger.log("init pps: " + power_pts[level] + " corrected: " + pp);
+            return init_foes(numfoes, possible_foes[level], pp);
         }
 
-        /*private static Target[] level_1() {
-            const int NUM_ENEMIES = 2;
-            Target[] ret = new Target[NUM_ENEMIES];
-            var ballamodel = new GTA.Model(PedHash.BallaEast01GMY);
-            var vmodel = new GTA.Model(VehicleHash.PCJ);
-
-            //ballas are uncoordinated - they spawn in different spots!
-            for (int i = 0; i < ret.Length; i++) {
-                Vector3 loc = getFoeSpawnLoc();
-                //spawn em i meters apart so they don't get stuck in each other!
-                if(i % 2 == 0)
-                    loc.X += i;
-                else 
-                    loc.X -= i;
-                                
-                Ped p = GTA.World.CreatePed(ballamodel, loc);
-                Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
-                ret[i] = applyFoeSettings(p, v, 0);
-            }
-    
-            return ret;
-        }
-
-        private static Target[] level_2() {
-            const int NUM_ENEMIES = 4;
-            Target[] ret = new Target[NUM_ENEMIES];
-            var ballamodel = new GTA.Model(PedHash.BallaEast01GMY);
-            var vmodel = new GTA.Model(VehicleHash.PCJ);
-
-            //ballas are uncoordinated - they spawn in different spots!
-            for (int i = 0; i < ret.Length; i++) {
-                Vector3 loc = getFoeSpawnLoc();
-                Ped p = GTA.World.CreatePed(ballamodel, loc);
-                Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
-                ret[i] = applyFoeSettings(p, v, 0);
-            }
-
-            return ret;
-        }*/
-
-        private static Target[] init_foes(int numfoes, int power_points) {
+        private static Target[] init_foes(int numfoes, Model[] possible_foes, int power_points) {
             Target[] ret = new Target[numfoes];
 
             //foes are coordinated for now.
             Vector3 loc = getFoeSpawnLoc();
-            for(int i = 0; i < ret.Length; i++) { 
-                power_points = applyFoeSettings(ref ret[i], loc, power_points);
+            for(int i = 0; i < ret.Length; i++) {
+                Model m = possible_foes[rng.Next(possible_foes.Length)];
+
+                //spawn em i meters apart so they don't get stuck!
+                if (i % 2 == 0)
+                    loc.X += i;
+                else
+                    loc.X -= i;
+
+                power_points = applyFoeSettings(ref ret[i], m, loc, power_points);
             }
 
+            return ret;
         }
 
-        private static int applyFoeSettings(ref Target t, Vector3 loc, int power_points) {
+        private static int applyFoeSettings(ref Target t, Model m, Vector3 loc, int power_points) {
             //any foe has these settings
-            Ped foe = World.CreatePed()
+            Ped foe = World.CreatePed(m, loc);
             foe.IsEnemy = true;
             foe.CanSwitchWeapons = true;
             foe.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 0);
             foe.DrivingStyle = DrivingStyle.AvoidTrafficExtremely;
+            Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, foe.Handle, KingOfTheBikes.foegroup);
+            GTA.Blip b = foe.AddBlip();
+            b.Color = BlipColor.Red;
 
+            //dynamic settings
+            foe.Weapons.Give(GTA.Native.WeaponHash.CombatPistol, 1000, true, true);
+            //upgrade weapon
+
+            //select/upgrade vehicle
+            var vmodel = new GTA.Model(VehicleHash.PCJ);
+            Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
+
+            Function.Call(Hash.SET_PED_INTO_VEHICLE, foe, v, -1);
+            //
+
+            foe.Task.FightAgainst(Game.Player.Character);
+
+            t = new Target(foe, v, b, true);
 
             return power_points;
         }
-
-        //power points to be used for dynamic enemy generation
-        /*private static Target applyFoeSettings(Ped foe, Vector3 loc, int power_points) {
+        
+        /*private static Target applyFoeSettings(Ped foe, Vector3 loc) {
             foe.Weapons.Give(GTA.Native.WeaponHash.MicroSMG, 1000, true, true);
             foe.IsEnemy = true;
             foe.CanSwitchWeapons = true;
