@@ -42,7 +42,8 @@ namespace KingOfTheBikes {
         private const float PEASANT_ESCAPE_RADIUS = 1000f;
         //vary by difficulty
         private const float ENEMY_ACCURACY_INIT = 0.75f;
-        private const int NUM_LEVELS = 2;
+
+        public const int NUM_LEVELS = 2;
         
         private int current_level = 1;
 

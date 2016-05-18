@@ -11,19 +11,32 @@ namespace KingOfTheBikes {
     class EnemySpawner {
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
+        //compress these into one data structure
+        static int[] level_mins = { 1, 1, 2, 2 },
+                level_maxs = { 2, 3, 4, 4 },
+                power_pts = { 100, 150, 200, 250 };
+
+        //maybe try putting this array in KOTB or another class entirely
+        public void howDoYouInitializeThisArray() {
+            Model[][] possible_foes = new Model[KingOfTheBikes.NUM_LEVELS][];
+
+            possible_foes[0] = { PedHash.BallaEast01GMY, PedHash.BallaOrig01GMY };
+        }
+
         public static Target[] spawn_level(int level) {
             switch(level) {
                 case 1:
-                    return level_1();
-                case 2:
-                    return level_2();
+                    int numfoes = rng.Next(level_mins[level], level_maxs[level]+1);
+                    //take away 50 pp for each extra enemy spawned
+                    int pp = power_pts[level] - (numfoes - level_mins[level]) * 50;
+                    return init_foes(numfoes, pp);
                 //wont happen
                 default:
                     return null;
             }
         }
 
-        private static Target[] level_1() {
+        /*private static Target[] level_1() {
             const int NUM_ENEMIES = 2;
             Target[] ret = new Target[NUM_ENEMIES];
             var ballamodel = new GTA.Model(PedHash.BallaEast01GMY);
@@ -55,17 +68,39 @@ namespace KingOfTheBikes {
             //ballas are uncoordinated - they spawn in different spots!
             for (int i = 0; i < ret.Length; i++) {
                 Vector3 loc = getFoeSpawnLoc();
-                Logger.log(loc, "Balla #" + i);
                 Ped p = GTA.World.CreatePed(ballamodel, loc);
                 Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
                 ret[i] = applyFoeSettings(p, v, 0);
             }
 
             return ret;
+        }*/
+
+        private static Target[] init_foes(int numfoes, int power_points) {
+            Target[] ret = new Target[numfoes];
+
+            //foes are coordinated for now.
+            Vector3 loc = getFoeSpawnLoc();
+            for(int i = 0; i < ret.Length; i++) { 
+                power_points = applyFoeSettings(ref ret[i], loc, power_points);
+            }
+
+        }
+
+        private static int applyFoeSettings(ref Target t, Vector3 loc, int power_points) {
+            //any foe has these settings
+            Ped foe = World.CreatePed()
+            foe.IsEnemy = true;
+            foe.CanSwitchWeapons = true;
+            foe.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 0);
+            foe.DrivingStyle = DrivingStyle.AvoidTrafficExtremely;
+
+
+            return power_points;
         }
 
         //power points to be used for dynamic enemy generation
-        private static Target applyFoeSettings(Ped foe, Vehicle v, int power_points) {
+        /*private static Target applyFoeSettings(Ped foe, Vector3 loc, int power_points) {
             foe.Weapons.Give(GTA.Native.WeaponHash.MicroSMG, 1000, true, true);
             foe.IsEnemy = true;
             foe.CanSwitchWeapons = true;
@@ -74,6 +109,9 @@ namespace KingOfTheBikes {
 
             Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, foe.Handle, KingOfTheBikes.foegroup);
 
+            var vmodel = new GTA.Model(VehicleHash.PCJ);
+            Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
+
             Function.Call(Hash.SET_PED_INTO_VEHICLE, foe, v, -1);
             foe.Task.FightAgainst(Game.Player.Character);
 
@@ -81,7 +119,7 @@ namespace KingOfTheBikes {
             b.Color = BlipColor.Red;
 
             return new Target(foe, v, b, true);
-        }
+        }*/
 
         //spawn randomizer constants
         private const int   MIN_FROM_PLAYER_DIST = 150,
