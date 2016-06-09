@@ -9,7 +9,7 @@ namespace KingOfTheBikes {
         //for debugging
         public static void log(string s) {
             using (System.IO.StreamWriter file =
-                        new System.IO.StreamWriter(@"E:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V\scripts\A LOG.txt", true)) {
+                        new System.IO.StreamWriter(@"A LOG.txt", true)) {
                 file.WriteLine(s);
             }
         }

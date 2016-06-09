@@ -52,9 +52,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="RagePluginHookSDK">
-      <HintPath>..\..\..\..\Downloads\RAGEPluginHook_0_38_886_6940_ALPHA\SDK\RagePluginHookSDK.dll</HintPath>
-    </Reference>
     <Reference Include="ScriptHookVDotNet">
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V\ScriptHookVDotNet.dll</HintPath>
     </Reference>

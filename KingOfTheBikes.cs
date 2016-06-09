@@ -125,10 +125,6 @@ namespace KingOfTheBikes {
 
                         removeFoe(foes[i]);
                         // you get ammo for killing someone. why not
-                        //AP pistol would work too
-                        /*if (player.Weapons.HasWeapon(GTA.Native.WeaponHash.MicroSMG)) {
-                            Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)WeaponHash.MicroSMG, 50);
-                        }*/
                         OutputArgument oa = new OutputArgument();
                         Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, oa, true);
                         int weapon_int = oa.GetResult<int>();
@@ -265,6 +261,7 @@ namespace KingOfTheBikes {
             }
             else if (e.KeyCode == Keys.NumPad0) {
                 UI.Notify("The script has not yet crashed");
+                Function.Call(Hash.DESTROY_MOBILE_PHONE);
             }
 
             //fun stuff

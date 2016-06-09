@@ -15,9 +15,9 @@ namespace KingOfTheBikes {
 
         //compress these into one data structure
         private static int[]    level_mins = { 1, 1, 1, 2, 2 },
-                        level_maxs = { 2, 3, 4, 3, 4 },
-                        //power_pts[i] must be g.t. level_maxs[i]*100
-                        power_pts = { 200, 300, 400, 500, 600};
+                                level_maxs = { 2, 3, 4, 3, 4 },
+                                //power_pts[i] must be g.t. level_maxs[i]*100
+                                power_pts_values = { 200, 300, 400, 500, 600};
 
         private static Model[][] possible_foes = new Model[][] {
             new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 },
@@ -30,14 +30,39 @@ namespace KingOfTheBikes {
         public static Target[] spawn_level(int level) {
             int numfoes = rng.Next(level_mins[level], level_maxs[level]+1);
             //take away 50 pp for each extra enemy spawned
-            int pp = power_pts[level] - (numfoes - level_mins[level]) * 100;
-            Logger.log("init pps: " + power_pts[level] + " corrected: " + pp);
+            int pp = power_pts_values[level] - (numfoes - level_mins[level]) * 100;
+            Logger.log("init pps: " + power_pts_values[level] + " corrected: " + pp);
             return init_foes(numfoes, possible_foes[level], pp);
         }
 
-        private static Target[] init_foes(int numfoes, Model[] possible_foes, int power_points) {
-            Target[] ret = new Target[numfoes];
+        private const int CHEAPEST = 10;
 
+        private static Target[] init_foes(int numfoes, Model[] possible_foes, int power_points) {
+            //first, distribute power points to each foe
+            int[] assigned_pps = new int[numfoes];
+
+            for (int i = 0; ; i++, i %= assigned_pps.Length) {
+                if (power_points < CHEAPEST * 2) {
+                    assigned_pps[i] += power_points;
+                    break;
+                }
+                //each foe can only take half the remaining power points
+                int r = rng.Next(CHEAPEST, (power_points / 2)+1);
+                //round up to nearest CHEAPEST
+                int mod = r % CHEAPEST;
+                if(mod != 0) {
+                    r += CHEAPEST - mod;
+                }
+                assigned_pps[i] += r;
+                power_points -= r;
+            }
+
+            Logger.log("tha assigned pps r :");
+            for(int i = 0; i < assigned_pps.Length; i++) {
+                Logger.log("" + assigned_pps[i]);
+            }
+
+            Target[] ret = new Target[numfoes];
             //foes are coordinated for now.
             Vector3 loc = getFoeSpawnLoc();
             for(int i = 0; i < ret.Length; i++) {
@@ -49,7 +74,7 @@ namespace KingOfTheBikes {
                 else
                     loc.X -= i;
 
-                power_points = applyFoeSettings(ref ret[i], m, loc, power_points);
+                power_points = applyFoeSettings(ref ret[i], m, loc, assigned_pps[i]);
             }
 
             return ret;
@@ -75,7 +100,6 @@ namespace KingOfTheBikes {
             Vehicle v = GTA.World.CreateVehicle(vmodel, loc);
 
             Function.Call(Hash.SET_PED_INTO_VEHICLE, foe, v, -1);
-            //
 
             foe.Task.FightAgainst(Game.Player.Character);
 
