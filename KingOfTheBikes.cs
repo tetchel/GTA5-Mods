@@ -14,7 +14,7 @@ namespace KingOfTheBikes {
     public class KingOfTheBikes : Script {
         private bool cops = false;
         private bool spawn_foes = true;
-        private GTA.Ped player;
+        private Ped player;
         
         private bool king = false;
         private bool ready_to_spawn = true;
@@ -50,11 +50,11 @@ namespace KingOfTheBikes {
             this.Tick += onTick;
             this.KeyUp += onKeyUp;
 
-            player = GTA.Game.Player.Character;
+            player = Game.Player.Character;
 
-            foegroup = GTA.World.AddRelationshipGroup("KOTB_FOES");
-            GTA.World.SetRelationshipBetweenGroups(GTA.Relationship.Hate, foegroup, player.RelationshipGroup);
-            GTA.World.SetRelationshipBetweenGroups(GTA.Relationship.Hate, player.RelationshipGroup, foegroup);
+            foegroup = World.AddRelationshipGroup("KOTB_FOES");
+            World.SetRelationshipBetweenGroups(Relationship.Hate, foegroup, player.RelationshipGroup);
+            World.SetRelationshipBetweenGroups(Relationship.Hate, player.RelationshipGroup, foegroup);
         }
 
         private void onTick(object sender, EventArgs e) {
@@ -67,7 +67,7 @@ namespace KingOfTheBikes {
                 //HACK (this shouldn't need to be done more than once!)
                 if (clock % 5 == 0) {
                     Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
-                    GTA.Game.MaxWantedLevel = 0;
+                    Game.MaxWantedLevel = 0;
                 }
 
                 UI.ShowSubtitle("~b~" + secsToTime(time_king) + "~s~, ~r~" + kills + " ~s~rebels destroyed, ~g~" + peasant_kills + " ~s~peasants put down", INTERVAL);
@@ -90,8 +90,8 @@ namespace KingOfTheBikes {
                 
                 //Mark nearby on-bike peds as peasants
                 //TODO unmarked peds will not count as kills (if the player is too fast)
-                GTA.Ped[] nearby = GTA.World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
-                foreach (GTA.Ped p in nearby) {
+                Ped[] nearby = World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
+                foreach (Ped p in nearby) {
                     if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
                         //need to mark aggressive peds. for some reason this removes their blip.
                         //could remove blip for more difficulty
@@ -204,8 +204,8 @@ namespace KingOfTheBikes {
         }
 
         //this better be self documenting
-        private bool isOnBike(GTA.Ped p) {
-            GTA.Vehicle v = p.CurrentVehicle;
+        private bool isOnBike(Ped p) {
+            Vehicle v = p.CurrentVehicle;
             return  v != null &&
                     (v.ClassType == VehicleClass.Motorcycles || v.ClassType == VehicleClass.Cycles);
         }
@@ -224,7 +224,7 @@ namespace KingOfTheBikes {
             num_of_living_enemies = 0;
             current_level = 0;
             //Rage.Game.RawFrameRender -= drawKingUI;
-            GTA.Game.MaxWantedLevel = 5;
+            Game.MaxWantedLevel = 5;
 
             for (int i = foes.Count - 1; i >= 0; i--) {
                 removeFoe(foes[i]);
@@ -247,7 +247,7 @@ namespace KingOfTheBikes {
                         //stop player from switching characters somehow
                         //Rage.Game.RawFrameRender += drawKingUI;
                         if (!cops) {
-                            GTA.Game.MaxWantedLevel = 0;
+                            Game.MaxWantedLevel = 0;
                             Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
                         }
                     }

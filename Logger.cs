@@ -9,7 +9,7 @@ namespace KingOfTheBikes {
         //for debugging
         public static void log(string s) {
             using (System.IO.StreamWriter file =
-                        new System.IO.StreamWriter(@"A LOG.txt", true)) {
+                        new System.IO.StreamWriter(@"kotb_log.txt", true)) {
                 file.WriteLine(s);
             }
         }
