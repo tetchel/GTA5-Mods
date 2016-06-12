@@ -13,17 +13,20 @@ namespace KingOfTheBikes {
 
 
         private static readonly int CHEAPEST_UPGRADE = 10,
-                                    ENEMY_COST = 100,
-                                    BASE_WEAPON_COST = 20,
-                                    VEH_UPGRADE_COST = 2 * CHEAPEST_UPGRADE;
+                                    //ENEMY_COST = 100,
+                                    BASE_WEAPON_COST = 50;
+     //                               VEH_UPGRADE_COST = 2 * CHEAPEST_UPGRADE;
 
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
-        //compress these into one data structure
-        private static readonly int[]   level_mins = { 1, 1, 1, 2, 2 },
+        //Later, all level info should be stored in a data structure (eg. Level[NUM_LEVELS]) once I finalize what that will constitute.
+        /*private static readonly int[]   level_mins = { 1, 1, 1, 2, 2 },
                                         level_maxs = { 2, 3, 4, 3, 4 },
                                         //power_pts_values[i] must be g.t. level_maxs[i]*ENEMY_COST
-                                        power_pts_values = { 250, 350, 450, 550, 650};
+                                        power_pts_values = { 250, 350, 450, 550, 650};*/
+        private static readonly int[]   num_enemies = {1, 2, 2, 3, 3 },
+                                        power_pts_values = { 100, 150, 250, 300, 350};
+
 
         private static readonly Model[][] possible_foes = new Model[][] {
             new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 },
@@ -33,40 +36,48 @@ namespace KingOfTheBikes {
             new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 }
         };
 
+        private static readonly Model[] vehicles = new Model[] {
+            new Model(VehicleHash.Sanchez), new Model(VehicleHash.Sanchez), new Model(VehicleHash.Bagger),
+            new Model(VehicleHash.Bagger), new Model(VehicleHash.PCJ),
+        };
+
         private static readonly WeaponHash[] possible_driveby_weapons = { WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun,
                                                                           WeaponHash.APPistol, WeaponHash.MicroSMG };
         //private static readonly WeaponHash[] possible_onfoot_weapons =  {   WeaponHash.SMG, WeaponHash.PumpShotgun, WeaponHash.AssaultRifle,
         //                                                                    WeaponHash.GrenadeLauncher, WeaponHash.RPG };
 
-        private static readonly VehicleHash[] possible_bikes = {    VehicleHash.Bagger, VehicleHash.PCJ, VehicleHash.Hexer,
-                                                                    VehicleHash.Daemon, VehicleHash.Vader, VehicleHash.Double, VehicleHash.Bati };
+        //private static readonly VehicleHash[] possible_bikes = {    VehicleHash.Bagger, VehicleHash.PCJ, VehicleHash.Hexer,
+        //                                                            VehicleHash.Daemon, VehicleHash.Vader, VehicleHash.Double, VehicleHash.Bati };
 
         private static Dictionary<WeaponHash, int> weapon_costs = new Dictionary<WeaponHash, int>();
         //private static Dictionary<VehicleHash, int> vehicle_costs;
         //private static Dictionary<int, int> armor_costs;
 
         static EnemySpawner() {
-            int[] weapon_costs_array = { 0, BASE_WEAPON_COST + 20, BASE_WEAPON_COST + 30, BASE_WEAPON_COST };
-            //initialize the map for easier cost lookup
+            int[] weapon_costs_array = { 0, BASE_WEAPON_COST, BASE_WEAPON_COST + 40, BASE_WEAPON_COST + 50,  };
+            //initialize the map for easier cost lookup (will be more useful when more guns)
             for (int i = 0; i < possible_driveby_weapons.Length; i++) {
                 weapon_costs.Add(possible_driveby_weapons[i], weapon_costs_array[i]);
             }
         }
 
         public static Target[] spawn_level(int level) {
+            /* Enemy # randomizer
             int numfoes = rng.Next(level_mins[level], level_maxs[level]+1);
             //take away ENEMY_COST pp for each enemy spawned
-            int pp = power_pts_values[level] - (numfoes) * ENEMY_COST;
-            Logger.log("init pps: " + power_pts_values[level] + " corrected: " + pp);
-            return init_foes(numfoes, possible_foes[level], pp);
+            int pp = power_pts_values[level] - (numfoes) * ENEMY_COST; */
+
+            //COULD add possible vehicle upgrade here
+            return init_foes(num_enemies[level], possible_foes[level], vehicles[level], power_pts_values[level]);
         }
 
 
-        private static Target[] init_foes(int numfoes, Model[] possible_foes, int power_points) {
+        private static Target[] init_foes(int numfoes, Model[] possible_foes, Model vehicleModel, int power_points) {
             //first, distribute power points to each foe
             int[] assigned_pps = new int[numfoes];
             int j = 0;
             for (j = 0; ; j++, j %= assigned_pps.Length) {
+                //not enough pps left to distribute?
                 if (power_points < CHEAPEST_UPGRADE * 2) {
                     assigned_pps[j] += power_points;
                     break;
@@ -103,7 +114,7 @@ namespace KingOfTheBikes {
                 else
                     loc.X -= i;
 
-                power_points = applyFoeSettings(ref ret[i], m, loc, assigned_pps[i]);
+                power_points = applyFoeSettings(ref ret[i], m, loc, vehicleModel, assigned_pps[i]);
                 if(power_points > 0) {
                     //give em to the next guy if possible. if it's the last guy they go to waste for now
                     if(i < assigned_pps.Length - 1)
@@ -114,7 +125,7 @@ namespace KingOfTheBikes {
             return ret;
         }
 
-        private static int applyFoeSettings(ref Target t, Model m, Vector3 loc, int power_points) {
+        private static int applyFoeSettings(ref Target t, Model m, Vector3 loc, Model vehicleModel, int power_points) {
             //any foe has these settings
             Ped foe = World.CreatePed(m, loc);
             foe.IsEnemy = true;
@@ -128,18 +139,12 @@ namespace KingOfTheBikes {
             //free weapon
             int driveby_index = 0;
             //int onfoot_weapon = 0;
-            //free bike
-            Model vmodel = new Model(VehicleHash.Sanchez);
-            //tracks how many vehicle upgrades have gone down (constant cost for vehicle upgrades)
-            int vehicle_index = 0;
             int armor = 0;
 
             int count = 0;
 
             //don't try and upgrade weapon if can't afford it
-            bool can_upgrade_weapon = BASE_WEAPON_COST <= power_points,
-                can_upgrade_vehicle = true,
-                can_upgrade_armor = true;
+            bool can_upgrade_weapon = BASE_WEAPON_COST <= power_points;
             //loop until they run out of PP
             while (power_points >= CHEAPEST_UPGRADE) {
                 Logger.log("PPs: " + power_points);
@@ -161,31 +166,19 @@ namespace KingOfTheBikes {
                         Logger.log("weapon upgrade would cost " + weapon_upgrade_cost);
                     }
                 }
-                if (can_upgrade_vehicle)
-                    can_upgrade_vehicle = VEH_UPGRADE_COST <= power_points && vehicle_index < possible_bikes.Length - 1;
-                if (can_upgrade_armor)
-                    can_upgrade_armor = armor < 100;
 
-                Logger.log("can_upgrades: " + can_upgrade_weapon + " " + can_upgrade_vehicle + " " + can_upgrade_armor);
-
-                int min_value = 0;
-                int roll = rng.Next(min_value,3);
+                int min_value = can_upgrade_weapon ? 0 : 1;
+                int roll = rng.Next(min_value,1);
                 //upgrade weapon
-                if(roll == 0 && can_upgrade_weapon) {
+                if(roll == 0) {
                     driveby_index++;
                     power_points -= weapon_upgrade_cost;
                     Logger.log("Upgraded weapon, PPs now " + power_points);
                 }
-                //upgrade vehicle
-                else if(roll == 1 && can_upgrade_armor) {
-                    //can always afford vehicle upgrade
-                    vehicle_index++;
-                    power_points -= VEH_UPGRADE_COST;
-                    Logger.log("Upgraded bike, PPs now " + power_points);
-                }
+                //add upgrades for accuracy and on foot weapon
                 //upgrade armor
-                else if (can_upgrade_armor) {
-                    armor += 25;
+                else if (armor < 100) {
+                    armor += 20;
                     power_points -= CHEAPEST_UPGRADE;
                     Logger.log("Upgraded armor, PPs now " + power_points);
                 }
@@ -210,7 +203,10 @@ namespace KingOfTheBikes {
                 foe.Weapons.Give(onfoot_weapon, ammo_to_give, true, true);
             }*/
             //give vehicle
-            Vehicle v = World.CreateVehicle(possible_bikes[vehicle_index], loc);
+            Vehicle v = World.CreateVehicle(vehicleModel, loc);
+            //random color on vehicle
+            Array colors = Enum.GetValues(typeof(VehicleColor));
+            v.PrimaryColor = (VehicleColor)colors.GetValue(rng.Next(colors.Length));
             Function.Call(Hash.SET_PED_INTO_VEHICLE, foe, v, -1);
 
             foe.Task.FightAgainst(Game.Player.Character);
@@ -275,7 +271,7 @@ namespace KingOfTheBikes {
 
     class Target {
         //convenience data type class
-        //holds ped, their vehicle, their blip. makes iterating through enemies and removing dead ones etc. easier
+        //holds ped, their vehicle, their blip. makes iterating through enemies and removing dead ones etc. easier in KOTB
 
         public Ped p { get; }
         public Vehicle v { get; }

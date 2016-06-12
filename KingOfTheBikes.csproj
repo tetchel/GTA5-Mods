@@ -69,7 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Logger.cs" />
-    <Compile Include="Target.cs" />
+    <Compile Include="EnemySpawner.cs" />
     <Compile Include="KingOfTheBikes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
