@@ -57,7 +57,6 @@ namespace KingOfTheBikes {
 
         private static Target applyFoeSettings(Model ped_model, Vector3 loc, Model vehicle_model, WeaponHash weapon) {
             //any foe has these settings
-            Logger.log("WTF");
             Ped foe = World.CreatePed(ped_model, loc);
             foe.IsEnemy = true;
             foe.CanSwitchWeapons = true;
@@ -66,7 +65,6 @@ namespace KingOfTheBikes {
             Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_HASH, foe.Handle, foegroup);
             Blip b = foe.AddBlip();
             b.Color = BlipColor.Red;
-            Logger.log("OMG");
 
             Vehicle v = World.CreateVehicle(vehicle_model, loc);
             //random color on vehicle
