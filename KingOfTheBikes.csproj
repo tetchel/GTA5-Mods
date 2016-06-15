@@ -73,6 +73,9 @@
     <Compile Include="KingOfTheBikes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="todo.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy $(TargetPath) "E:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V\scripts\"</PostBuildEvent>

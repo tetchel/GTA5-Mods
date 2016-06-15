@@ -12,15 +12,16 @@ namespace KingOfTheBikes {
     //using RAGENativeUI.Elements;
 
     public class KingOfTheBikes : Script {
+        //set this to false to make police fear the king
         private bool can_be_wanted = false;
+        //shorthand for Game.Player.Character
         private Ped player;
-        
+        //if the player is king ATM
         private bool king = false;
 
-        //these fields are reset each game
-        //in secs
-        private long time_king = 0;
+        //these fields are reset each round
         //in ticks
+        private long time_king = 0;
         private int clock = 0,
                     kills = 0,
                     score = 0,
@@ -31,14 +32,18 @@ namespace KingOfTheBikes {
         private List<Target> foes = new List<Target>(50);
         //private float enemy_accuracy_mult = ENEMY_ACCURACY_INIT;
 
-        private const int   INTERVAL = 1000,
-                            TICKS_PER_LEVEL = 100,
-                            GET_ON_BIKE_TIME = 16,
+        private const int INTERVAL = 1000,                //time between ticks in ms
+                            TICKS_PER_LEVEL = 100,          //level duration in units of INTERVAL
+                            GET_ON_BIKE_TIME = 21,          //amount of time player has to get back on bike until loses points
+                            GET_ON_BIKE_FAIL_TIME = 10,     //starts after GET_ON_BIKE_TIME expires 
+                                                            //(length of grace period during which player rapidly loses points)
                             LONG_MESSAGE_DURATION = 5000,
-                            //points values - could vary by level
+                            //points values - could vary by level or something
+                            //TODO persistant points in the top corner
                             ENEMY_KILL_VALUE = 100,
                             PEASANT_KILL_VALUE = 1000,
-                            POINTS_PER_SECOND = 1;      
+                            POINTS_PER_SECOND = 1,
+                            POINTS_LOST_OFFBIKE_PER_SECOND = 100;
 
         private const float FIND_PEASANT_RADIUS = 100f,     //performance impact ?
                             PEASANT_ESCAPE_RADIUS = 1000f;
@@ -59,28 +64,43 @@ namespace KingOfTheBikes {
                 //player.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 1);
 
                 time_king++;
-                score += POINTS_PER_SECOND;
                 //HACK (this shouldn't need to be done more than once!)
                 //maybe there is a way to do this using relationship groups
-                if (!can_be_wanted) {
+                if (clock % 5 == 0 && !can_be_wanted) {
                     Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
                     Game.MaxWantedLevel = 0;
                 }
 
-                UI.ShowSubtitle("~b~" + secsToTime(time_king) + "~s~, ~r~" + kills + " ~s~rebels destroyed, ~g~" + 
-                    peasant_kills + " ~s~peasants quelled", INTERVAL);
+                //  UI.ShowSubtitle("~b~" + score + "~s~       ~r~" + kills + " ~s~rebels destroyed, ~g~" + 
+                //      peasant_kills + " ~s~peasants quelled", INTERVAL);
+                UI.ShowSubtitle("~b~" + score, INTERVAL);
 
                 //player can't be off bike for more than GET_ON_BIKE_TIME ticks
                 //should instead subtract points quickly after a certain amount of time, then fail after 30s ?
                 if (!isOnBike(player)) {
                     get_on_bike_timer--;
-                    if (get_on_bike_timer < GET_ON_BIKE_TIME && player.IsAlive)
-                        UI.ShowSubtitle("GET ON A BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
-                    
-                    if (get_on_bike_timer == 0) {
-                        reignEnded();
-                        UI.ShowSubtitle("~r~You should have gotten back on a bike.", LONG_MESSAGE_DURATION);
+                    //turn the score red or something to indicate losing points
+                    if (get_on_bike_timer < GET_ON_BIKE_TIME && player.IsAlive) {
+                        string color = get_on_bike_timer <= GET_ON_BIKE_FAIL_TIME ? "~r~ " : "~b~ ";
+                        UI.ShowSubtitle(color + score + " ~s~GET ON A BIKE!! ~r~" + get_on_bike_timer, INTERVAL);
                     }
+                    
+                    if (get_on_bike_timer <= GET_ON_BIKE_FAIL_TIME) {
+                        if (score >= POINTS_LOST_OFFBIKE_PER_SECOND)
+                            score -= POINTS_LOST_OFFBIKE_PER_SECOND;
+                        else
+                            score = 0;
+
+                        if(get_on_bike_timer <= 0) {
+                            reignEnded();
+                            UI.ShowSubtitle("~r~You should have gotten back on a bike.", LONG_MESSAGE_DURATION);
+                            return;
+                        }
+                    }
+                }
+                else {
+                    //points only if on bike
+                    score += POINTS_PER_SECOND*(current_level+1);
                 }
 
                 //reset timer when player gets back on a bike
@@ -121,7 +141,7 @@ namespace KingOfTheBikes {
                         }
                         else {
                             peasant_kills++;
-                            score += ENEMY_KILL_VALUE;
+                            score += PEASANT_KILL_VALUE;
                         }
 
                         removeFoe(foes[i]);
@@ -157,13 +177,15 @@ namespace KingOfTheBikes {
 
                 //tick the clock
                 clock++;
-                clock %= TICKS_PER_LEVEL;        //# ticks in a level
+                clock %= TICKS_PER_LEVEL;
                 if (!player.IsAlive) {
                     reignEnded();
                 }
             }
         }
 
+        //gives the player ammo for current weapon each time they get a kill
+        //usually does not work properly for explosives cause you can have time to switch weapons but whatever
         private void givePlayerAmmo() {
             OutputArgument oa = new OutputArgument();
             Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, oa, true);
@@ -181,11 +203,12 @@ namespace KingOfTheBikes {
         
         //perform cleanup on dead enemy or on all foes when dethroned
         private void removeFoe(Target e) {
+            Logger.log("Removing foe: " + e.p.Model);
             //e.p.Task.ClearAllImmediately();
             e.p.Task.ClearAll();
             e.p.MarkAsNoLongerNeeded();
             e.v.MarkAsNoLongerNeeded();
-            if(e.b != null)
+            //if(e.b != null)
                 e.b.Remove();
             foes.Remove(e);
         }
@@ -297,8 +320,8 @@ namespace KingOfTheBikes {
             v.SetMod(VehicleMod.BackWheels, 9, true);
             //v.SetMod(VehicleMod.Ti)                   //tires?
 
-            //v.CanTiresBurst = false;
-            //v.CanWheelsBreak = false;
+            v.CanTiresBurst = false;
+            v.CanWheelsBreak = false;
             v.EngineCanDegrade = false;
             //v.EnginePowerMultiplier = 1.5f;
 

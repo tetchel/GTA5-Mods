@@ -5,7 +5,7 @@ using GTA.Math;
 
 namespace KingOfTheBikes {
     class EnemySpawner {
-        public static int NUM_LEVELS { get; } = 5;
+        public static int NUM_LEVELS { get; } = 8;
 
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
@@ -20,11 +20,14 @@ namespace KingOfTheBikes {
             World.SetRelationshipBetweenGroups(Relationship.Hate, Game.Player.Character.RelationshipGroup, foegroup);
 
             //initialize all level data structures here
-            LEVELS[0] = new Level(1, Level.POSSIBLE_VEHICLES.Sanchez, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[1] = new Level(2, Level.POSSIBLE_VEHICLES.Sanchez, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Ballas);
-            LEVELS[2] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 3, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[3] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Ballas);
-            LEVELS[4] = new Level(3, Level.POSSIBLE_VEHICLES.Hexer, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[0] = new Level(2, Level.POSSIBLE_VEHICLES.Sanchez, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 5, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[1] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Ballas);
+            LEVELS[2] = new Level(2, Level.POSSIBLE_VEHICLES.Hexer, WeaponHash.SawnOffShotgun, 0, 0, Level.POSSIBLE_FOES.Lost);
+            LEVELS[3] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Korean);
+            LEVELS[4] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[5] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, WeaponHash.APPistol, 0, 0, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[6] = new Level(4, Level.POSSIBLE_VEHICLES.Hexer, WeaponHash.APPistol, WeaponHash.MicroSMG, 4, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[7] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, WeaponHash.MicroSMG, 0, 0, Level.POSSIBLE_FOES.Vagos);
         }
 
         public static int get_foes_to_levelup(int level_num) {
@@ -159,10 +162,12 @@ namespace KingOfTheBikes {
     class Level {
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
-        public enum POSSIBLE_FOES { Vagos, Ballas };
+        public enum POSSIBLE_FOES { Vagos, Ballas, Korean, Lost };
         private static readonly Model[][] possible_foes = new Model[][] {
             new Model[] { PedHash.Vagos01GFY, PedHash.VagosFun01 },
             new Model[] { PedHash.BallaOrig01GMY, PedHash.BallaEast01GMY, PedHash.Ballas01GFY, PedHash.BallaSout01GMY },
+            new Model[] { PedHash.KorBoss01GMM, PedHash.KorLieut01GMY, PedHash.Korean01GMY, PedHash.Korean02GMY },
+            new Model[] { PedHash.Lost01GFY, PedHash.Lost01GMY, PedHash.Lost02GMY, PedHash.Lost03GMY },
         };
 
         public enum POSSIBLE_VEHICLES { Sanchez, Bagger, PCJ, Hexer, Daemon, DoubleT, Bati };

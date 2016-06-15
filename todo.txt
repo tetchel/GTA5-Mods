@@ -1,0 +1,20 @@
+﻿Bugs:
+You still get a wanted level briefly if you do something bad in front of police
+There are always more bugs
+
+Features:
+Armor, accuracy
+More variety of enemies (one type per level!)
+Points display other than subtitle
+Prioritize player's Z position when finding enemy spawn location so that they don't spawn on over/under passes / on top of parking garages / etc
+Bonus points for headshots (probably not possible), other cool stuff (speed? first person?)
+Cops and peasants (others?) run away from you
+Spawn enemies facing player
+
+Could:
+Make being off bike harsher / think of a more fun way to punish (less points for kills?)
+Discourage running away more (but how)
+Mark peasant if you aim at them
+Initialize all enemies when round starts to improve performance (would it though?)
+Enemies in cars in later levels??
+Reward for killing enemies in cars??
