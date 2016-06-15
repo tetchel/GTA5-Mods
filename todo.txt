@@ -1,5 +1,6 @@
 ﻿Bugs:
 You still get a wanted level briefly if you do something bad in front of police
+unmarked peds will not count as kills if the player is too fast. probably too much work to fix this
 There are always more bugs
 
 Features:
@@ -18,3 +19,4 @@ Mark peasant if you aim at them
 Initialize all enemies when round starts to improve performance (would it though?)
 Enemies in cars in later levels??
 Reward for killing enemies in cars??
+Getting on bikes pimps them out??

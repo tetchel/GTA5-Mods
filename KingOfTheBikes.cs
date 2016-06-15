@@ -1,6 +1,4 @@
-﻿//[assembly: Rage.Attributes.Plugin("King of the Bikes", Description = "Rule the Road", Author = "TimE")]
-
-namespace KingOfTheBikes {
+﻿namespace KingOfTheBikes {
     using System;
     using System.Windows.Forms;
     using System.Drawing;
@@ -33,23 +31,18 @@ namespace KingOfTheBikes {
         //private float enemy_accuracy_mult = ENEMY_ACCURACY_INIT;
 
         private const int INTERVAL = 1000,                //time between ticks in ms
-                            TICKS_PER_LEVEL = 100,          //level duration in units of INTERVAL
-                            GET_ON_BIKE_TIME = 21,          //amount of time player has to get back on bike until loses points
-                            GET_ON_BIKE_FAIL_TIME = 10,     //starts after GET_ON_BIKE_TIME expires 
-                                                            //(length of grace period during which player rapidly loses points)
+                            TICKS_PER_LEVEL = 100,          //level duration in ticks
+                            GET_ON_BIKE_TIME = 21,          //amount of time player has to get back on bike until loses
+                            GET_ON_BIKE_FAIL_TIME = 10,     //when this many or fewer seconds remain, player loses points each tick
                             LONG_MESSAGE_DURATION = 5000,
                             //points values - could vary by level or something
-                            //TODO persistant points in the top corner
                             ENEMY_KILL_VALUE = 100,
                             PEASANT_KILL_VALUE = 1000,
-                            POINTS_PER_SECOND = 1,
+                            POINTS_PER_TICK = 1,
                             POINTS_LOST_OFFBIKE_PER_SECOND = 100;
 
         private const float FIND_PEASANT_RADIUS = 100f,     //performance impact ?
                             PEASANT_ESCAPE_RADIUS = 1000f;
-        //vary by difficulty
-        //private const float ENEMY_ACCURACY_INIT = 0.75f;
-                
 
         public KingOfTheBikes() {
             Interval = INTERVAL;
@@ -76,7 +69,6 @@ namespace KingOfTheBikes {
                 UI.ShowSubtitle("~b~" + score, INTERVAL);
 
                 //player can't be off bike for more than GET_ON_BIKE_TIME ticks
-                //should instead subtract points quickly after a certain amount of time, then fail after 30s ?
                 if (!isOnBike(player)) {
                     get_on_bike_timer--;
                     //turn the score red or something to indicate losing points
@@ -86,6 +78,7 @@ namespace KingOfTheBikes {
                     }
                     
                     if (get_on_bike_timer <= GET_ON_BIKE_FAIL_TIME) {
+                        //loses points each tick
                         if (score >= POINTS_LOST_OFFBIKE_PER_SECOND)
                             score -= POINTS_LOST_OFFBIKE_PER_SECOND;
                         else
@@ -99,8 +92,8 @@ namespace KingOfTheBikes {
                     }
                 }
                 else {
-                    //points only if on bike
-                    score += POINTS_PER_SECOND*(current_level+1);
+                    //points pt only if on bike
+                    score += POINTS_PER_TICK*(current_level+1);
                 }
 
                 //reset timer when player gets back on a bike
@@ -109,7 +102,6 @@ namespace KingOfTheBikes {
                 }
                 
                 //Mark nearby on-bike peds as peasants
-                //TODO unmarked peds will not count as kills (if the player is too fast)
                 Ped[] nearby = World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
                 foreach (Ped p in nearby) {
                     if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
@@ -153,6 +145,7 @@ namespace KingOfTheBikes {
                             removeFoe(foes[i]);
                             //UI.ShowSubtitle("~r~You let a peasant escape your kingdom.", LONG_MESSAGE_DURATION);
                             //reignEnded();
+                            //return;
                         }
                     }
                 }
@@ -243,7 +236,6 @@ namespace KingOfTheBikes {
             peasant_kills = 0;
             get_on_bike_timer = GET_ON_BIKE_TIME;
             current_level = -1;
-            //Rage.Game.RawFrameRender -= drawKingUI;
             Game.MaxWantedLevel = 5;
 
             for (int i = foes.Count - 1; i >= 0; i--) {

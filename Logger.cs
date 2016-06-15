@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace KingOfTheBikes {
+﻿namespace KingOfTheBikes {
     class Logger {
         //for debugging
         public static void log(string s) {
