@@ -32,8 +32,8 @@
 
         private const int INTERVAL = 1000,                //time between ticks in ms
                             TICKS_PER_LEVEL = 100,          //level duration in ticks
-                            GET_ON_BIKE_TIME = 21,          //amount of time player has to get back on bike until loses
-                            GET_ON_BIKE_FAIL_TIME = 10,     //when this many or fewer seconds remain, player loses points each tick
+                            GET_ON_BIKE_TIME = 26,          //amount of time player has to get back on bike until loses
+                            GET_ON_BIKE_FAIL_TIME = 10,     //this many or fewer seconds remain, lose points each tick
                             LONG_MESSAGE_DURATION = 5000,
                             //points values - could vary by level or something
                             ENEMY_KILL_VALUE = 100,
@@ -42,7 +42,8 @@
                             POINTS_LOST_OFFBIKE_PER_SECOND = 100;
 
         private const float FIND_PEASANT_RADIUS = 100f,     //performance impact ?
-                            PEASANT_ESCAPE_RADIUS = 1000f;
+                            PEASANT_ESCAPE_RADIUS = 1000f,
+                            HEADSHOT_BONUS_RATIO = 2f;
 
         public KingOfTheBikes() {
             Interval = INTERVAL;
@@ -57,12 +58,6 @@
                 //player.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 1);
 
                 time_king++;
-                //HACK (this shouldn't need to be done more than once!)
-                //maybe there is a way to do this using relationship groups
-                if (clock % 5 == 0 && !can_be_wanted) {
-                    Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
-                    Game.MaxWantedLevel = 0;
-                }
 
                 //  UI.ShowSubtitle("~b~" + score + "~s~       ~r~" + kills + " ~s~rebels destroyed, ~g~" + 
                 //      peasant_kills + " ~s~peasants quelled", INTERVAL);
@@ -128,8 +123,18 @@
                     if (!foes[i].p.IsAlive) {
                         if (foes[i].isAggro) {
                             kills++;
-                            score += ENEMY_KILL_VALUE;
                             givePlayerAmmo();
+                            //update score, more points for headshot.
+                            OutputArgument oa = new OutputArgument();
+                            if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, foes[i].p, oa)) {
+                                Bone outbone = (Bone)oa.GetResult<int>();
+                                if(outbone == Bone.IK_Head || outbone == Bone.SKEL_Head) {
+                                    score += (int)(HEADSHOT_BONUS_RATIO*ENEMY_KILL_VALUE);
+                                }
+                                else {
+                                    score += ENEMY_KILL_VALUE;
+                                }
+                            }
                         }
                         else {
                             peasant_kills++;
@@ -191,6 +196,7 @@
                 wp == WeaponHash.Pistol || wp == WeaponHash.SawnOffShotgun || wp == WeaponHash.HeavyPistol) {
                 ammo_to_give = 50;
             }
+            UI.Notify("Gave " + ammo_to_give + " ammo to " + wp.ToString());
             Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)wp, ammo_to_give);
         }
         
@@ -226,8 +232,9 @@
         //called when you turn off king mode or die
         //outputs the scores of your previous run and resets variables
         private void reignEnded() {
-            UI.Notify("Your reign has come to an end. ~n~Time: " + secsToTime(time_king) + "~n~Level: " + (current_level+1) + 
-                "~n~Foe Kills: " + kills + "~n~Peasant Kills: " + peasant_kills + "~n~~n~Score: " + score);
+            UI.Notify("Your reign has come to an end. ~n~Time: " + secsToTime(time_king) + "~n~Level: " 
+                + (current_level+1) + "~n~Foe Kills: " + kills + "~n~Peasant Kills: " + peasant_kills 
+                + "~n~~n~Score: " + score);
             king = false;
             time_king = 0;
             clock = 0;
@@ -255,11 +262,12 @@
                         //new king code
                         UI.Notify("You are now the King of the Bikes. Hunt down and destroy those who oppose you!");
                         king = true;
-                        player.Armor = 100;
                         //stop player from switching characters somehow would be good
                         if (!can_be_wanted) {
-                            Game.MaxWantedLevel = 0;
-                            Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, player);
+                            Function.Call(Hash.SET_POLICE_IGNORE_PLAYER, Game.Player.Character, true);
+                            Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, Game.Player.Character);
+                            Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, 0, false);
+                            Function.Call(Hash.SET_PLAYER_WANTED_LEVEL_NOW, Game.Player.Character, false);
                         }
                     }
                     else {

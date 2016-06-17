@@ -1,6 +1,8 @@
 ﻿Bugs:
-You still get a wanted level briefly if you do something bad in front of police
+You still get a wanted level briefly if you do something bad in front of police - seems to be fixed
 unmarked peds will not count as kills if the player is too fast. probably too much work to fix this
+Slowing down time (by changing weapons, using power) doesn't slow down clock
+
 There are always more bugs
 
 Features:
@@ -8,15 +10,13 @@ Armor, accuracy
 More variety of enemies (one type per level!)
 Points display other than subtitle
 Prioritize player's Z position when finding enemy spawn location so that they don't spawn on over/under passes / on top of parking garages / etc
-Bonus points for headshots (probably not possible), other cool stuff (speed? first person?)
+other cool stuff (speed? first person? GET_TIME_SINCE_PLAYER_DROVE_AGAINST_TRAFFIC)
 Cops and peasants (others?) run away from you
 Spawn enemies facing player
 
 Could:
-Make being off bike harsher / think of a more fun way to punish (less points for kills?)
 Discourage running away more (but how)
-Mark peasant if you aim at them
 Initialize all enemies when round starts to improve performance (would it though?)
 Enemies in cars in later levels??
-Reward for killing enemies in cars??
+Reward for killing (world's) enemies in cars??
 Getting on bikes pimps them out??

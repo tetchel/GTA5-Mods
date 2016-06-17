@@ -20,14 +20,29 @@ namespace KingOfTheBikes {
             World.SetRelationshipBetweenGroups(Relationship.Hate, Game.Player.Character.RelationshipGroup, foegroup);
 
             //initialize all level data structures here
-            LEVELS[0] = new Level(2, Level.POSSIBLE_VEHICLES.Sanchez, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 5, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[1] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Ballas);
-            LEVELS[2] = new Level(2, Level.POSSIBLE_VEHICLES.Hexer, WeaponHash.SawnOffShotgun, 0, 0, Level.POSSIBLE_FOES.Lost);
-            LEVELS[3] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Korean);
-            LEVELS[4] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[5] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, WeaponHash.APPistol, 0, 0, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[6] = new Level(4, Level.POSSIBLE_VEHICLES.Hexer, WeaponHash.APPistol, WeaponHash.MicroSMG, 4, Level.POSSIBLE_FOES.Vagos);
-            LEVELS[7] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, WeaponHash.MicroSMG, 0, 0, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[0] = new Level(2, Level.POSSIBLE_VEHICLES.Sanchez,
+                WeaponHash.CombatPistol, Level.POSSIBLE_FOES.Vagos);
+
+            LEVELS[1] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, 
+                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Ballas);
+
+            LEVELS[2] = new Level(2, Level.POSSIBLE_VEHICLES.Hexer, 
+                WeaponHash.SawnOffShotgun, Level.POSSIBLE_FOES.Lost);
+
+            LEVELS[3] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, 
+                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Korean);
+
+            LEVELS[4] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
+                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Vagos);
+
+            LEVELS[5] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, 
+                WeaponHash.APPistol, Level.POSSIBLE_FOES.Vagos);
+
+            LEVELS[6] = new Level(4, Level.POSSIBLE_VEHICLES.Hexer, 
+                WeaponHash.APPistol, WeaponHash.MicroSMG, 4, Level.POSSIBLE_FOES.Vagos);
+
+            LEVELS[7] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, 
+                WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Vagos);
         }
 
         public static int get_foes_to_levelup(int level_num) {
@@ -184,13 +199,13 @@ namespace KingOfTheBikes {
         public WeaponHash rngWeapon { get; }
         public Model[] possible_models { get; } //each ped model is selected randomly from this list. a different list for each level
 
-        /*public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, POSSIBLE_FOES foesTypeIndex) {
+        public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, POSSIBLE_FOES foesTypeIndex) {
             num_enemies = num_enemies_;
             vehicle = possible_vehicles[(int)vehicleTypeIndex];
             freeWeapon = freeWeapon_;
             rngWeapon = 0;
             possible_models = possible_foes[(int)foesTypeIndex];
-        }*/
+        }
 
         public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, WeaponHash rngWeapon_, int inverseChanceOfRngWeapon_,
                 POSSIBLE_FOES foesTypeIndex) {
