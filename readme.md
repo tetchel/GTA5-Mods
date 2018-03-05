@@ -6,4 +6,7 @@ Scripts I made to enhance GTA5 experience
 - Numpad 5 to lose cops
 - B to refill current weapon ammo
 
-[Download here](https://github.com/tetchel/KingOfTheBikes/raw/master/bin/x64/Release/KingOfTheBikes.dll)
+Requires [ScriptHookVDotNet](https://github.com/crosire/scripthookvdotnet)
+
+
+[Download here](https://github.com/tetchel/KingOfTheBikes/raw/master/bin/x64/Release/KingOfTheBikes.dll) and place in $yourgta5dir/scripts/
