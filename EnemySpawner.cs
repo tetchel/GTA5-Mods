@@ -20,29 +20,35 @@ namespace KingOfTheBikes {
             World.SetRelationshipBetweenGroups(Relationship.Hate, Game.Player.Character.RelationshipGroup, foegroup);
 
             //initialize all level data structures here
-            LEVELS[0] = new Level(2, Level.POSSIBLE_VEHICLES.Sanchez,
+            LEVELS[0] = new Level(1, Level.POSSIBLE_VEHICLES.Sanchez,
                 WeaponHash.CombatPistol, Level.POSSIBLE_FOES.Vagos);
 
-            LEVELS[1] = new Level(2, Level.POSSIBLE_VEHICLES.Bagger, 
-                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Ballas);
+            LEVELS[1] = new Level(1, Level.POSSIBLE_VEHICLES.Bagger, 
+                WeaponHash.CombatPistol, WeaponHash.APPistol, 5, Level.POSSIBLE_FOES.Ballas);
 
-            LEVELS[2] = new Level(2, Level.POSSIBLE_VEHICLES.Hexer, 
-                WeaponHash.SawnOffShotgun, Level.POSSIBLE_FOES.Lost);
+            LEVELS[2] = new Level(1, Level.POSSIBLE_VEHICLES.Hexer,
+                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 3, Level.POSSIBLE_FOES.Lost);
 
-            LEVELS[3] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, 
-                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Korean);
+            LEVELS[3] = new Level(2, Level.POSSIBLE_VEHICLES.PCJ, 
+                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 4, Level.POSSIBLE_FOES.Korean);
 
-            LEVELS[4] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
-                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 2, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[4] = new Level(2, Level.POSSIBLE_VEHICLES.Daemon, 
+                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Vagos);
 
-            LEVELS[5] = new Level(3, Level.POSSIBLE_VEHICLES.PCJ, 
-                WeaponHash.APPistol, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[5] = new Level(2, Level.POSSIBLE_VEHICLES.PCJ, 
+                WeaponHash.APPistol, Level.POSSIBLE_FOES.Ballas);
 
-            LEVELS[6] = new Level(4, Level.POSSIBLE_VEHICLES.Hexer, 
-                WeaponHash.APPistol, WeaponHash.MicroSMG, 4, Level.POSSIBLE_FOES.Vagos);
+            LEVELS[6] = new Level(3, Level.POSSIBLE_VEHICLES.Hexer, 
+                WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Lost);
 
-            LEVELS[7] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, 
+            LEVELS[7] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
+                WeaponHash.APPistol, Level.POSSIBLE_FOES.Korean);
+
+            LEVELS[8] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
                 WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Vagos);
+
+            LEVELS[9] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, 
+                WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Ballas);
         }
 
         public static int get_foes_to_levelup(int level_num) {
