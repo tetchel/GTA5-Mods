@@ -1,0 +1,10 @@
+DropOnlyOnPress=false
+DropKey=L
+~Weapons to drop:
+PISTOL
+PUMPSHOTGUN
+STUNGUN
+COMBATPISTOL
+~Weapons to hide when in car:
+COMBATPISTOL
+SAWNOFFSHOTGUN

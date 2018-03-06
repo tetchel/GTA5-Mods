@@ -8,6 +8,7 @@
     //using Rage;
     using System.Collections.Generic;
     //using RAGENativeUI.Elements;
+    using System.Linq;
 
     namespace KingOfTheBikes {
 
@@ -44,7 +45,8 @@
                                 ENEMY_KILL_VALUE = 100,
                                 PEASANT_KILL_VALUE = 1000,
                                 POINTS_PER_TICK = 1,
-                                POINTS_LOST_OFFBIKE_PER_SECOND = 100;
+                                POINTS_LOST_OFFBIKE_PER_SECOND = 100,
+                                SPAWN_INTERVAL = 10;
 
             private const float FIND_PEASANT_RADIUS = 100f,     //performance impact ?
                                 PEASANT_ESCAPE_RADIUS = 1000f,
@@ -137,16 +139,22 @@
                                 kills++;
                                 givePlayerAmmo();
                                 //update score, more points for headshot.
+                                bool isHeadshot = false;
                                 OutputArgument oa = new OutputArgument();
                                 if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, foes[i].p, oa)) {
                                     Bone outbone = (Bone)oa.GetResult<int>();
-                                    if (outbone == Bone.IK_Head || outbone == Bone.SKEL_Head) {
-                                        score += (int)(HEADSHOT_BONUS_RATIO * ENEMY_KILL_VALUE);
-                                    }
-                                    else {
-                                        score += ENEMY_KILL_VALUE;
-                                    }
+                                    isHeadshot = outbone == Bone.IK_Head || outbone == Bone.SKEL_Head;
                                 }
+
+                                if(isHeadshot) {
+                                    score += (int)(HEADSHOT_BONUS_RATIO * ENEMY_KILL_VALUE);
+                                    UI.Notify("In the head");
+                                }
+                                else {
+                                    //UI.Notify("U killed");
+                                    score += ENEMY_KILL_VALUE;
+                                }
+
                             }
                             else {
                                 peasant_kills++;
@@ -174,8 +182,17 @@
                         player.Armor = 100;
                         player.Health = player.MaxHealth;
                     }
-
-                    const int SPAWN_INTERVAL = 15;
+                  
+                    // if all the aggressive foes are dead, decrement the clock so that it's now time for the next wave
+                    if(foes.All((f) => !f.isAggro)) {
+                        UI.Notify("No angry foes remain");
+                        for(int i = 0; i < SPAWN_INTERVAL; i++) {
+                            if((clock + i) % SPAWN_INTERVAL == 0) {
+                                clock -= i;
+                            }
+                        }
+                    }
+                    // now check the clock to see if it's time to spawn enemies
                     if (clock % SPAWN_INTERVAL == 0) {
                         Target[] newfoes = EnemySpawner.spawn_level(current_level);
 
@@ -218,7 +235,7 @@
                     ammo_to_give = 2;
                 }
 
-                //UI.Notify("Gave " + ammo_to_give + " ammo to " + wp.ToString());
+                UI.Notify("+ " + ammo_to_give + " " + wp.ToString());
                 Function.Call(Hash.ADD_AMMO_TO_PED, player, (int)wp, ammo_to_give);
             }
 

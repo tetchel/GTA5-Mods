@@ -76,9 +76,12 @@
     <Compile Include="KingOfTheBikes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Valet.cs" />
+    <Compile Include="WeaponRemover\WeaponRemover.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="todo.txt" />
+    <Content Include="WeaponRemover\README_Weapon_Remover.html" />
+    <Content Include="WeaponRemover\unwanted_weapons.txt" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />

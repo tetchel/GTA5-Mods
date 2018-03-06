@@ -5,7 +5,7 @@ using GTA.Math;
 
 namespace KingOfTheBikes {
     class EnemySpawner {
-        public static int NUM_LEVELS { get; } = 8;
+        public static int NUM_LEVELS { get; } = 10;
 
         private static Random rng = new Random(DateTime.Now.Millisecond);
 
@@ -27,7 +27,7 @@ namespace KingOfTheBikes {
                 WeaponHash.CombatPistol, WeaponHash.APPistol, 5, Level.POSSIBLE_FOES.Ballas);
 
             LEVELS[2] = new Level(1, Level.POSSIBLE_VEHICLES.Hexer,
-                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 3, Level.POSSIBLE_FOES.Lost);
+                WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Lost);
 
             LEVELS[3] = new Level(2, Level.POSSIBLE_VEHICLES.PCJ, 
                 WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 4, Level.POSSIBLE_FOES.Korean);
@@ -72,7 +72,7 @@ namespace KingOfTheBikes {
                     loc.X += 2*i;
                 else
                     loc.X -= 2*i;
-
+ 
                 ret[i] = applyFoeSettings(m, loc, level.vehicle, level.rollForWeapon());
             }
 

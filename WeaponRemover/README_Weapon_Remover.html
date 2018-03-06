@@ -1,0 +1,56 @@
+<html>
+<head>
+	<title>WeaponRemover</title>
+</head>
+
+<body style="background:#060606;color:white;font-family:Helvetica">
+
+<u><h1 style="text-align: center">Better Weapon Remover</h1></u>
+
+<h2><u>What This Mod Does</u></h2>
+<p>
+This mod fixes two related issues I had with vanilla GTA: 
+<ol>
+	<li>You cannot drop weapons.</li>
+	<li>You must cycle through <em>every possible driveby weapon</em> when you are in a vehicle.</li>
+</ol> 
+So, this mod allows you to define two lists of weapons: those you don't want in your inventory, and those you don't want to cycle through while driving. <br>
+For dropping weapons, you can choose to either drop the listed weapons at the press of a button (default L), or to drop those weapons 
+whenever you pick one up, so that you never have to look at them again!
+</p>
+
+<h2><u>How to Use This Mod</u></h2>
+
+<p><b><a href="https://raw.githubusercontent.com/tetchel/GTA5-Mods/master/WeaponRemover/unwanted_weapons.txt">
+Download an example unwanted_weapons.txt here</a></b>, and place it into your GTA 5 dir <code>/scripts/</code>, the same place this mod is installed.</p>
+
+<p>
+Use <a href=http://www.nextgenupdate.com/forums/gta-5-mods/708285-all-gta-5-hash-codes-weapons-vehicles-etc.html>a weapon list like this</a>, 
+but without the <code>WEAPON_</code> prefix. </b>
+<br>
+You <u><b>must not</b></u> edit the lines that begin with "~", or add new lines above <code>~Weapons to drop or avoid:</code>. 
+</p>
+
+<p>
+You can add weapons to the <code>~Weapons to drop</code> section to have them dropped either when you press a key, or constantly, depending on the value of <code>DropOnlyOnPress</code> (see <b>1:</b> below).<br>
+You must reload the script (thus applying your weapon list changes) by pressing <code>Insert</code>.
+<u><b>Do not do this while on a vehicle</b></u> or you might lose your weapons!. 
+</p>
+<p>
+You can also add weapons to the <code>~Weapons to hide when in car:</code> section to have them hidden when you are in a vehicle, so you don't have to cycle through them when selecting a driveby weapon. This list is not affected by any of the settings below.
+</p>
+
+<h2><u>Changing the Mod Options</u></h2>
+
+Lines 1 and 2 allow you to select the "Mode" of the first part of the mod (see <b>1:</b>) and the key to drop weapons if you are in DropOnlyOnPress mode (that is, if line 1 is set to <code>true</code>).<br><br>
+
+<b>1:</b> Change only the value after the <code>=</code> to <code>"true"</code> or <code>"false"</code> (without quotes of course). <br>
+If it is set to true, your unwanted weapons will be dropped when you press <code>DropKey</code> (defined in line 2).<br>
+Else if it is set to false, you will drop all your unwanted weapons constantly.<br><br>
+
+<b>2:</b> Set the DropKey, the key that will remove unwanted weapons in <code>DropOnlyOnPress=true</code> mode to <a href=https://msdn.microsoft.com/en-us/library/system.windows.forms.keys%28v=vs.110%29.aspx>any of these that your keyboard supports</a> except for any key marked as a <code>modifier</code>.
+</p>
+
+<footer style=>Written by tetchel</footer>
+</body>
+</html>
