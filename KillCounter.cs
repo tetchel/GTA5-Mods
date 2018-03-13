@@ -125,7 +125,7 @@ class KillCounter : Script {
     public void onScoreChanged() {
         // Logger.log("Showing score of " + score);
         //UI.Notify(score + "");
-        UI.ShowSubtitle(subtitleFunction(), INTERVAL*1000);
+        UI.ShowSubtitle(subtitleFunction(), INTERVAL*30);
     }
 
     public string subtitleDefault() {
@@ -216,7 +216,7 @@ class KillCounter : Script {
         onScoreChanged();
     }
 
-    private void onPlayerDeath() {
+    public void onPlayerDeath() {
         if(killCount != 0) {
             string notif = "You got " + killCount + " kills wow good job and " +
                     (killCount - policeKillCount) + " were civilians.\nFinal Score: " + score;
@@ -228,14 +228,16 @@ class KillCounter : Script {
             string labelFirstUpper = label.ToLower().First().ToString().ToUpper() + label.ToLower().Substring(1);
             string notNewhighscore = labelFirstUpper + " High Score: " + defaultHighscore;
 
-            if(score > defaultHighscore) {
-                defaultHighscore = score;
-                UI.Notify(notif + "\n" + newhighscore);
+            int hs = defaultHighscore;
+            if(!isInDefaultMode()) {
+                altHighscores.TryGetValue(label, out hs);
+            }
+            if(score > hs) {
+                hs = score;
+                altHighscores.Remove(label);
+                altHighscores.Add(label, hs);
 
-                int hs = defaultHighscore;
-                if(!isInDefaultMode()) {
-                    altHighscores.TryGetValue(pedKillValueFunction.ToString(), out hs);
-                }
+                UI.Notify(notif + "\n" + newhighscore);
 
                 string fn = getHighscoreFilename();
                 // update high score
@@ -248,15 +250,15 @@ class KillCounter : Script {
         }
 
         // Reset score if using regular KC mode, else leave the other script to do it
-        if(!isInDefaultMode()) {
-            resetScore();
-        }
+        //if(!isInDefaultMode()) {
+        resetScore();
+        //}
     }
 
     private string getHighscoreFilename() {
         string fn = FILENAME;
         if (!isInDefaultMode()) {
-            fn += pedKillValueFunction.ToString();
+            fn += pedKillValueFunction.Method.Name;
         }
         fn += FILE_EXT;
         return fn;

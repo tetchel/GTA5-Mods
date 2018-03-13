@@ -160,8 +160,7 @@ public class KingOfTheBikes : Script {
                 //level is over
                 current_level++;
                 UI.Notify("Level " + (current_level + 1), true);
-                player.Armor = 100;
-                player.Health = player.MaxHealth;
+                fillArmorAndHp();
             }
           
             // if all the aggressive foes are dead, decrement the clock so that it's now time for the next wave
@@ -190,6 +189,11 @@ public class KingOfTheBikes : Script {
                 reignEnded();
             }
         }
+    }
+
+    private void fillArmorAndHp() {
+        player.Armor = 100;
+        player.Health = player.MaxHealth;
     }
 
     private bool isHeadshot(Ped p) {
@@ -275,7 +279,7 @@ public class KingOfTheBikes : Script {
         killCounter.pedKillValueFunction = killCounter.pedKillValueDefault;
         killCounter.subtitleFunction = killCounter.subtitleDefault;
         // UI.Notify("subtitleFunc is now " + killCounter.subtitleFunction);
-        killCounter.resetScore();
+        killCounter.onPlayerDeath();
 
         for (int i = foes.Count - 1; i >= 0; i--) {
             removeFoe(foes[i]);
@@ -329,7 +333,8 @@ public class KingOfTheBikes : Script {
             //toggle invincibility
             bool isInvincible = Function.Call<bool>(Hash.GET_PLAYER_INVINCIBLE, Game.Player);
             UI.Notify("You are " + (isInvincible ? "no longer" : "now") + " invincible");
-            killCounter.resetScore();
+            fillArmorAndHp();
+            //            killCounter.resetScore();
             Function.Call(Hash.SET_PLAYER_INVINCIBLE, Game.Player, !isInvincible);
         }
     }
