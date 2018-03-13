@@ -116,7 +116,7 @@ public class KingOfTheBikes : Script {
                     //give enemies a blip - for some reason they were being removed before.
                     //non-hostile peasants no longer have blips.
                     Blip b;
-                    if (p.Weapons.BestWeapon.Hash != WeaponHash.Unarmed) {
+                    if (KillCounter.isArmed(p)) {
                         b = p.AddBlip();
                         b.Color = BlipColor.Red;
                     }
@@ -166,7 +166,7 @@ public class KingOfTheBikes : Script {
           
             // if all the aggressive foes are dead, decrement the clock so that it's now time for the next wave
             if(foes.All((f) => !f.isAggro)) {
-                UI.Notify("No angry foes remain");
+                // UI.Notify("No angry foes remain");
                 for(int i = 0; i < SPAWN_INTERVAL; i++) {
                     if((clock - i) % SPAWN_INTERVAL == 0) {
                         clock -= i;
@@ -261,6 +261,7 @@ public class KingOfTheBikes : Script {
         UI.Notify("Your reign has come to an end. ~n~Time: " + secsToTime(time_king) + "~n~Level: "
             + (current_level + 1) + "~n~Foe Kills: " + kills + "~n~Peasant Kills: " + peasant_kills
             + "~n~Civ kills: " + killCounter.getCivKills() + "~n~~n~Score: " + killCounter.getScore());
+
         king = false;
         time_king = 0;
         clock = 0;
@@ -269,9 +270,12 @@ public class KingOfTheBikes : Script {
         get_on_bike_timer = GET_ON_BIKE_TIME;
         current_level = -1;
         Game.MaxWantedLevel = 5;
-        killCounter.resetScore();
+
+        // Reset the KillCounter state
         killCounter.pedKillValueFunction = killCounter.pedKillValueDefault;
-        killCounter.subtitleFunction = killCounter.subtitleFunction;
+        killCounter.subtitleFunction = killCounter.subtitleDefault;
+        // UI.Notify("subtitleFunc is now " + killCounter.subtitleFunction);
+        killCounter.resetScore();
 
         for (int i = foes.Count - 1; i >= 0; i--) {
             removeFoe(foes[i]);
@@ -317,6 +321,7 @@ public class KingOfTheBikes : Script {
 
         else if (e.KeyCode == Keys.NumPad5) {
             UI.Notify("Wanted level removed");
+            killCounter.resetScore();
             Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, 0, false);
         }
 
@@ -324,6 +329,7 @@ public class KingOfTheBikes : Script {
             //toggle invincibility
             bool isInvincible = Function.Call<bool>(Hash.GET_PLAYER_INVINCIBLE, Game.Player);
             UI.Notify("You are " + (isInvincible ? "no longer" : "now") + " invincible");
+            killCounter.resetScore();
             Function.Call(Hash.SET_PLAYER_INVINCIBLE, Game.Player, !isInvincible);
         }
     }
@@ -331,14 +337,17 @@ public class KingOfTheBikes : Script {
     // Used by KillCounter
     private int pedKillValueKOTB(Ped p) {
         int value = 0;
-        if(isOnBike(p)) {
-            value = 5000;
-        }
-        else if(isFoe(p)) {
+        if(isFoe(p)) {
             value = (current_level + 1) * 100;
             if(isHeadshot(p)) {
                 value *= 2;
             }
+        }
+        else if(isOnBike(p)) {
+            value = 5000;
+        }
+        else if(KillCounter.isArmed(p)) {
+            value = 1000;
         }
         else if(p.IsInVehicle()) {
             value = 500;        

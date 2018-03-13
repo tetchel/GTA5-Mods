@@ -123,12 +123,12 @@ class KillCounter : Script {
     }
 
     public void onScoreChanged() {
-        Logger.log("Showing score of " + score);
+        // Logger.log("Showing score of " + score);
         //UI.Notify(score + "");
         UI.ShowSubtitle(subtitleFunction(), INTERVAL*1000);
     }
 
-    private string subtitleDefault() {
+    public string subtitleDefault() {
         int civKills = killCount - policeKillCount;
         return "~r~" + civKills + "~b~  " + policeKillCount + "~g~  " + score;
     }
@@ -183,7 +183,10 @@ class KillCounter : Script {
             return 50;
         }
         else {
-            if(p.IsInVehicle()) {
+            if(isArmed(p)) {
+                return 500;
+            }
+            else if(p.IsInVehicle()) {
                 return 300;
             }
             else {
@@ -206,7 +209,7 @@ class KillCounter : Script {
 
     public void resetScore() {
         Logger.log("Reset score");
-        UI.Notify("Resetting score");
+        // UI.Notify("Resetting score");
         score = 0;
         killCount = 0;
         policeKillCount = 0;
@@ -261,5 +264,9 @@ class KillCounter : Script {
 
     private bool isInDefaultMode() {
         return pedKillValueFunction == pedKillValueDefault;
+    }
+
+    public static bool isArmed(Ped p) {
+        return p.Weapons.BestWeapon.Hash != WeaponHash.Unarmed;
     }
 }
