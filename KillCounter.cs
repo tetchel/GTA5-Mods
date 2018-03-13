@@ -25,21 +25,27 @@ class KillCounter : Script {
 
     private bool enabled = true;
 
-    private bool gotKill = false;
-
     private const string FILENAME = "highscore.txt";
+
+    public Func<Ped, int> pedKillValueFunction { get; set; }
 
     public static KillCounter instance() {
         if(_instance == null) {
-            _instance = new KillCounter();
+            Logger.log("Error: KillCounter was null");
         }
         return _instance;
     }
 
+    // Don't use constructor, use singleton instance (but constructor must be public for script purposes)
     public KillCounter() {
+        Logger.log("Init KillCounter");
 
+        _instance = this;
         Tick += onTick;
         KeyUp += onKeyUp;
+
+        // Assign the default kill value function
+        pedKillValueFunction = defaultPedKillValue;
 
         player = Game.Player.Character;
 
@@ -47,7 +53,7 @@ class KillCounter : Script {
         try {
             hs = File.ReadAllText(FILENAME);
         }
-        catch(FileNotFoundException e) {
+        catch(FileNotFoundException) {
             // doesn't matter
         }
 
@@ -64,6 +70,7 @@ class KillCounter : Script {
         enabled = true;
     }
 
+    
     public void disable() {
         if (enabled) {
             UI.Notify("Disable KillCounter");
@@ -104,63 +111,98 @@ class KillCounter : Script {
         foreach (Ped p in nearby) {
 
             if(!p.IsAlive && !killedPeds.Contains(p)) {
+                //UI.Notify("A KILL!");
                 // got a kill?
                 onKill(p);
             }
         }
-
-        if(gotKill) {
-            // Only update the UI if the kill count has changed.
-
-            int civKills = killCount - policeKillCount;
-            //double score = civKills + (0.01 * policeKillCount);
-            UI.ShowSubtitle("~r~" + civKills + "~b~  " + policeKillCount + "~g~  " + score, INTERVAL*1000);
-            gotKill = false;
-        }
     }
 
-    private PedHash[] COP_HASHES = new PedHash[] {
+    public void onScoreChanged() {
+        Logger.log("Showing score of " + score);
+        int civKills = killCount - policeKillCount;
+        //UI.Notify(score + "");
+        UI.ShowSubtitle("~r~" + civKills + "~b~  " + policeKillCount + "~g~  " + score, INTERVAL*1000);
+    }
+
+    private static PedHash[] COP_HASHES = new PedHash[] {
         PedHash.Cop01SFY, PedHash.Cop01SMY, PedHash.Hwaycop01SMY, PedHash.Snowcop01SMM,
         PedHash.Sheriff01SFY, PedHash.Sheriff01SMY,
         PedHash.Swat01SMY, PedHash.FibSec01, PedHash.FibSec01SMM
     };
+
+    public void givePoints(int points) {
+        score += points;
+        Logger.log("Giving " + points + ", now have " + score);
+        // Update the UI whenever your score changes
+        onScoreChanged();
+    }
+
+    public void losePoints(int points) {
+        if(score - points > 0) {
+            score -= points;
+        }
+        else {
+            score = 0;
+        }
+        Logger.log("Taking " + points + ", now have " + score);
+        // Update the UI whenever your score changes
+        onScoreChanged();
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public int getCivKills() {
+        return killCount - policeKillCount;
+    }
 
     // call when you kill p
     private void onKill(Ped p) {
         killCount++;
         killedPeds.Add(p);
 
+        // update score
+        givePoints(pedKillValueFunction(p));
+
+        //UI.Notify("U mucked");
+    }
+
+    public int defaultPedKillValue(Ped p) {
+        if(isCop(p)) {
+            policeKillCount++;
+            return 50;
+        }
+        else {
+            if(p.IsInVehicle()) {
+                return 300;
+            }
+            else {
+                return 100;
+            }
+        }
+        //UI.Notify("GetKillValue Error on ped " + p.Model.ToString());
+    }
+
+    public static bool isCop(Ped p) {
         bool isCop = false;
         // check if it's a police officer you killed
         foreach (int copHash in COP_HASHES) {
-            if(Function.Call<bool>(Hash.IS_PED_MODEL, p, copHash)) {
+            if (Function.Call<bool>(Hash.IS_PED_MODEL, p, copHash)) {
                 // they r a cop
-                policeKillCount++;
                 isCop = true;
                 break;
             }
         }
-
-        // update score
-        if(isCop) {
-            score += 50;
-        }
-        else {
-            if(p.IsInVehicle()) {
-                score += 300;
-            }
-            else {
-                score += 100;
-            }
-        }
-
-        //UI.Notify("U mucked");
-        gotKill = true;
+        return isCop;
     }
 
     public void resetScore() {
         UI.Notify("Resetting score");
         score = 0;
+        killCount = 0;
+        policeKillCount = 0;
     }
 
     private void onPlayerDeath() {
@@ -182,8 +224,10 @@ class KillCounter : Script {
                 UI.Notify(notif + "\n" + notNewhighscore);
             }
         }
-        killCount = 0;
-        policeKillCount = 0;
-        score = 0;
+
+        // Hacky way of telling if in KOTB mode
+        if(pedKillValueFunction != defaultPedKillValue) {
+            resetScore();
+        }
     }
 }

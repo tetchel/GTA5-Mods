@@ -28,15 +28,17 @@ class VehicleSpawner : Script {
             spawnThrone();
         }
         else if(e.KeyCode == Keys.Pause) {
-            Vehicle copter = World.CreateVehicle(VehicleHash.Buzzard, posInFrontOfPlayer(10));
-            doVehicleStuff(copter);
+            spawnVehicle(VehicleHash.Buzzard, 10);
+        }
+        else if(e.KeyCode == Keys.Delete) {
+            spawnVehicle(VehicleHash.Hydra, 10);
         }
         else if (e.KeyCode == Keys.PageUp) {
-            Vehicle plane = World.CreateVehicle(VehicleHash.Besra, posInFrontOfPlayer(10));
-            doVehicleStuff(plane);
+            spawnVehicle(VehicleHash.Besra, 10);
         }
         else if (e.KeyCode == Keys.PageDown) {
-            spawnHummer();
+            Vehicle v = spawnVehicle(VehicleHash.Patriot, 5);
+            doVehicleMods(v, "WATCHOUT");
         }
     }
 
@@ -71,19 +73,20 @@ class VehicleSpawner : Script {
         v.MarkAsNoLongerNeeded();
     }
 
-    private Vector3 posInFrontOfPlayer(float distance) {
-        return player.Position + player.ForwardVector * distance;
-    }
-
-    private void spawnHummer() {
-        Vehicle v = World.CreateVehicle(VehicleHash.Patriot, posInFrontOfPlayer(5));
-        doVehicleMods(v, "WATCHOUT");
-    }
-
     private void spawnThrone() {
-        Vehicle v = World.CreateVehicle(VehicleHash.Bati, posInFrontOfPlayer(5));
+        Vehicle v = spawnVehicle(VehicleHash.Bati, 5);
         doVehicleMods(v, "THE KING");
         v.CustomPrimaryColor = Color.FromArgb(0, 51, 204);
         v.CustomSecondaryColor = Color.Gold;
+    }
+
+    private Vehicle spawnVehicle(VehicleHash hash, float distInFrontOfPlayer) {
+        Vehicle v = World.CreateVehicle(hash, posInFrontOfPlayer(distInFrontOfPlayer), player.Heading);
+        doVehicleStuff(v);
+        return v;
+    }
+
+    private Vector3 posInFrontOfPlayer(float distance) {
+        return player.Position + player.ForwardVector * distance;
     }
 }
