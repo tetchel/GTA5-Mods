@@ -1,5 +1,4 @@
-﻿namespace KingOfTheBikes {
-using System;
+﻿using System;
 using System.Windows.Forms;
 using System.Drawing;
 using GTA;
@@ -57,12 +56,17 @@ public class KingOfTheBikes : Script {
         killCounter = KillCounter.instance();
     }
 
+    public bool isKing() {
+        return king;
+    }
+
     private void onTick(object sender, EventArgs e) {
         if (king) {
             // if just became king
             if(clock == 0) {
                 Logger.log("I'm king now");
-                killCounter.pedKillValueFunction = getKillValueKOTB;
+                killCounter.pedKillValueFunction = pedKillValueKOTB;
+                killCounter.subtitleFunction = getSubtitleKOTB;
             }
 
             //player.GiveHelmet(false, HelmetType.RegularMotorcycleHelmet, 1);
@@ -72,8 +76,6 @@ public class KingOfTheBikes : Script {
             // so call this constantly to make sure the wanted level is removed - because no cops come after KOTB
             Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, 0, false);
 
-            //  UI.ShowSubtitle("~b~" + score + "~s~       ~r~" + kills + " ~s~rebels destroyed, ~g~" + 
-            //      peasant_kills + " ~s~peasants quelled", INTERVAL);
             //UI.ShowSubtitle("~b~" + score, INTERVAL);
 
             //player can't be off bike for more than GET_ON_BIKE_TIME ticks
@@ -235,7 +237,7 @@ public class KingOfTheBikes : Script {
         foes.Remove(targ);
     }
 
-    //returns if a ped is in the list of Targets
+    // returns if a ped is in the list of Targets
     private bool isFoe(Ped p) {
         foreach (Target e in foes) {
             if (e.p.Equals(p)) {
@@ -245,20 +247,20 @@ public class KingOfTheBikes : Script {
         return false;
     }
 
-    //this better be self documenting
+    // self documenting
     public static bool isOnBike(Ped p) {
         Vehicle v = p.CurrentVehicle;
         return v != null &&
                 (v.ClassType == VehicleClass.Motorcycles || v.ClassType == VehicleClass.Cycles);
     }
 
-    //called when you turn off king mode or die
-    //outputs the scores of your previous run and resets variables
+    // called when you turn off king mode or die
+    // outputs the scores of your previous run and resets variables
     private void reignEnded() {
         Logger.log("reignEnded");
         UI.Notify("Your reign has come to an end. ~n~Time: " + secsToTime(time_king) + "~n~Level: "
             + (current_level + 1) + "~n~Foe Kills: " + kills + "~n~Peasant Kills: " + peasant_kills
-            + " Civ kills: " + killCounter.getCivKills() + "~n~~n~Score: " + killCounter.getScore());
+            + "~n~Civ kills: " + killCounter.getCivKills() + "~n~~n~Score: " + killCounter.getScore());
         king = false;
         time_king = 0;
         clock = 0;
@@ -268,7 +270,8 @@ public class KingOfTheBikes : Script {
         current_level = -1;
         Game.MaxWantedLevel = 5;
         killCounter.resetScore();
-        killCounter.pedKillValueFunction = killCounter.defaultPedKillValue;
+        killCounter.pedKillValueFunction = killCounter.pedKillValueDefault;
+        killCounter.subtitleFunction = killCounter.subtitleFunction;
 
         for (int i = foes.Count - 1; i >= 0; i--) {
             removeFoe(foes[i]);
@@ -326,13 +329,16 @@ public class KingOfTheBikes : Script {
     }
         
     // Used by KillCounter
-    private int getKillValueKOTB(Ped p) {
+    private int pedKillValueKOTB(Ped p) {
         int value = 0;
         if(isOnBike(p)) {
             value = 5000;
         }
         else if(isFoe(p)) {
             value = (current_level + 1) * 100;
+            if(isHeadshot(p)) {
+                value *= 2;
+            }
         }
         else if(p.IsInVehicle()) {
             value = 500;        
@@ -341,12 +347,11 @@ public class KingOfTheBikes : Script {
             // just a regular guy
             value = 200;
         }
-
-        // bonus points for headshot
-        if (isHeadshot(p)) {
-            value += 200;
-        }
         return value;
     }
-}
+
+    private string getSubtitleKOTB() {
+        return "~b~" + killCounter.getScore() + "~s~    ~r~" + kills + "  ~g~" + peasant_kills + "  ~s~" + 
+            killCounter.getCivKills();
+    }
 }

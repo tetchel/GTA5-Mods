@@ -16,7 +16,8 @@ class KillCounter : Script {
     private int policeKillCount = 0;
     private int score = 0;
 
-    private int highScore = 0;
+    private int defaultHighscore = 0;
+    private Dictionary<string, int> altHighscores = new Dictionary<string, int>();
 
     private const int INTERVAL = 1000;                //time between ticks in ms
     private const int RADIUS = 500;
@@ -25,9 +26,11 @@ class KillCounter : Script {
 
     private bool enabled = true;
 
-    private const string FILENAME = "highscore.txt";
+    private const string FILENAME = "highscore";
+    private const string FILE_EXT = ".txt";
 
     public Func<Ped, int> pedKillValueFunction { get; set; }
+    public Func<string> subtitleFunction { get; set; }
 
     public static KillCounter instance() {
         if(_instance == null) {
@@ -45,20 +48,21 @@ class KillCounter : Script {
         KeyUp += onKeyUp;
 
         // Assign the default kill value function
-        pedKillValueFunction = defaultPedKillValue;
+        pedKillValueFunction = pedKillValueDefault;
+        subtitleFunction = subtitleDefault;
 
         player = Game.Player.Character;
 
         string hs = "";
         try {
-            hs = File.ReadAllText(FILENAME);
+            hs = File.ReadAllText(getHighscoreFilename());
         }
         catch(FileNotFoundException) {
             // doesn't matter
         }
 
-        if (!int.TryParse(hs, out highScore)) {
-            highScore = 0;
+        if (!int.TryParse(hs, out defaultHighscore)) {
+            defaultHighscore = 0;
         }
         //UI.Notify("Init killCounter");
     }
@@ -120,9 +124,13 @@ class KillCounter : Script {
 
     public void onScoreChanged() {
         Logger.log("Showing score of " + score);
-        int civKills = killCount - policeKillCount;
         //UI.Notify(score + "");
-        UI.ShowSubtitle("~r~" + civKills + "~b~  " + policeKillCount + "~g~  " + score, INTERVAL*1000);
+        UI.ShowSubtitle(subtitleFunction(), INTERVAL*1000);
+    }
+
+    private string subtitleDefault() {
+        int civKills = killCount - policeKillCount;
+        return "~r~" + civKills + "~b~  " + policeKillCount + "~g~  " + score;
     }
 
     private static PedHash[] COP_HASHES = new PedHash[] {
@@ -169,7 +177,7 @@ class KillCounter : Script {
         //UI.Notify("U mucked");
     }
 
-    public int defaultPedKillValue(Ped p) {
+    public int pedKillValueDefault(Ped p) {
         if(isCop(p)) {
             policeKillCount++;
             return 50;
@@ -186,23 +194,23 @@ class KillCounter : Script {
     }
 
     public static bool isCop(Ped p) {
-        bool isCop = false;
         // check if it's a police officer you killed
         foreach (int copHash in COP_HASHES) {
             if (Function.Call<bool>(Hash.IS_PED_MODEL, p, copHash)) {
                 // they r a cop
-                isCop = true;
-                break;
+                return true;
             }
         }
-        return isCop;
+        return false;
     }
 
     public void resetScore() {
+        Logger.log("Reset score");
         UI.Notify("Resetting score");
         score = 0;
         killCount = 0;
         policeKillCount = 0;
+        onScoreChanged();
     }
 
     private void onPlayerDeath() {
@@ -210,24 +218,48 @@ class KillCounter : Script {
             string notif = "You got " + killCount + " kills wow good job and " +
                     (killCount - policeKillCount) + " were civilians.\nFinal Score: " + score;
 
-            string newhighscore = "You set a new highscore!";
-            string notNewhighscore = "High Score: " + highScore;
+            string label = pedKillValueFunction.Method.Name.Substring("pedKillValue".Length);
+            string newhighscore = "You set a new " + label + " highscore!";
 
-            if(score > highScore) {
-                highScore = score;
+            // assume the name of the pedKVF is like "pedKillValueKOTB" and extract the highscore "name" from it.
+            string labelFirstUpper = label.ToLower().First().ToString().ToUpper() + label.ToLower().Substring(1);
+            string notNewhighscore = labelFirstUpper + " High Score: " + defaultHighscore;
+
+            if(score > defaultHighscore) {
+                defaultHighscore = score;
                 UI.Notify(notif + "\n" + newhighscore);
 
+                int hs = defaultHighscore;
+                if(!isInDefaultMode()) {
+                    altHighscores.TryGetValue(pedKillValueFunction.ToString(), out hs);
+                }
+
+                string fn = getHighscoreFilename();
                 // update high score
-                File.WriteAllText(FILENAME, highScore + ""); 
+                File.WriteAllText(fn, hs + "");
+                Logger.log("recording highscore " + hs + " into " + fn);
             }
             else {
                 UI.Notify(notif + "\n" + notNewhighscore);
             }
         }
 
-        // Hacky way of telling if in KOTB mode
-        if(pedKillValueFunction != defaultPedKillValue) {
+        // Reset score if using regular KC mode, else leave the other script to do it
+        if(!isInDefaultMode()) {
             resetScore();
         }
+    }
+
+    private string getHighscoreFilename() {
+        string fn = FILENAME;
+        if (!isInDefaultMode()) {
+            fn += pedKillValueFunction.ToString();
+        }
+        fn += FILE_EXT;
+        return fn;
+    }
+
+    private bool isInDefaultMode() {
+        return pedKillValueFunction == pedKillValueDefault;
     }
 }
