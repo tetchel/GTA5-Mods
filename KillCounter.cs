@@ -209,7 +209,7 @@ class KillCounter : Script {
 
     public void resetScore() {
         Logger.log("Reset score");
-        // UI.Notify("Resetting score");
+        UI.Notify("Score reset");
         score = 0;
         killCount = 0;
         policeKillCount = 0;

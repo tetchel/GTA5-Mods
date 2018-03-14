@@ -112,17 +112,17 @@ public class KingOfTheBikes : Script {
             //Mark nearby on-bike peds as peasants
             Ped[] nearby = World.GetNearbyPeds(player, FIND_PEASANT_RADIUS);
             foreach (Ped p in nearby) {
+                Blip b;
+                if (p.CurrentBlip == null && KillCounter.isArmed(p)) {
+                    b = p.AddBlip();
+                    b.Color = BlipColor.Red;
+                }
+                else {
+                    b = p.CurrentBlip;
+                }
                 if (p.IsInVehicle() && isOnBike(p) && !isFoe(p)) {
                     //give enemies a blip - for some reason they were being removed before.
                     //non-hostile peasants no longer have blips.
-                    Blip b;
-                    if (KillCounter.isArmed(p)) {
-                        b = p.AddBlip();
-                        b.Color = BlipColor.Red;
-                    }
-                    else {
-                        b = p.CurrentBlip;
-                    }
                     p.IsEnemy = true;
                     p.IsPersistent = true;
                     foes.Add(new Target(p, p.CurrentVehicle, b, false));
@@ -243,12 +243,16 @@ public class KingOfTheBikes : Script {
 
     // returns if a ped is in the list of Targets
     private bool isFoe(Ped p) {
+        return toFoe(p) != null;
+    }
+
+    private Target toFoe(Ped p) {
         foreach (Target e in foes) {
             if (e.p.Equals(p)) {
-                return true;
+                return e;
             }
         }
-        return false;
+        return null;
     }
 
     // self documenting
@@ -343,22 +347,27 @@ public class KingOfTheBikes : Script {
     private int pedKillValueKOTB(Ped p) {
         int value = 0;
         if(isFoe(p)) {
-            value = (current_level + 1) * 100;
-            if(isHeadshot(p)) {
-                value *= 2;
+            if(toFoe(p).isAggro) {
+                // Killed an enemy
+                value = (current_level + 1) * 100;
+                if(isHeadshot(p)) {
+                    value *= 2;
+                }
+            }
+            else {
+                UI.Notify("Peasant kill");
+                // killed a peasant
+                value = 3000;
             }
         }
-        else if(isOnBike(p)) {
-            value = 5000;
-        }
         else if(KillCounter.isArmed(p)) {
-            value = 1000;
+            value = 800;
         }
-        else if(p.IsInVehicle()) {
-            value = 500;        
+        else if(!p.IsInVehicle()) {
+            // More points for off-vehicle when KOTB
+            value = 300;
         }
         else {
-            // just a regular guy
             value = 200;
         }
         return value;

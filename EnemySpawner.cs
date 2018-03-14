@@ -20,34 +20,34 @@ class EnemySpawner {
 
         //initialize all level data structures here
         LEVELS[0] = new Level(1, Level.POSSIBLE_VEHICLES.Sanchez,
-            WeaponHash.CombatPistol, Level.POSSIBLE_FOES.Vagos);
+            WeaponHash.CombatPistol, Level.POSSIBLE_FOES.Vagos, 50);
 
         LEVELS[1] = new Level(1, Level.POSSIBLE_VEHICLES.Bagger, 
-            WeaponHash.CombatPistol, WeaponHash.APPistol, 5, Level.POSSIBLE_FOES.Ballas);
+            WeaponHash.CombatPistol, WeaponHash.APPistol, 5, Level.POSSIBLE_FOES.Ballas, 60);
 
         LEVELS[2] = new Level(1, Level.POSSIBLE_VEHICLES.Hexer,
-            WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Lost);
+            WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 2, Level.POSSIBLE_FOES.Lost, 70);
 
         LEVELS[3] = new Level(2, Level.POSSIBLE_VEHICLES.PCJ, 
-            WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 4, Level.POSSIBLE_FOES.Korean);
+            WeaponHash.CombatPistol, WeaponHash.SawnOffShotgun, 4, Level.POSSIBLE_FOES.Korean, 70);
 
         LEVELS[4] = new Level(2, Level.POSSIBLE_VEHICLES.Daemon, 
-            WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Vagos);
+            WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Vagos, 75);
 
         LEVELS[5] = new Level(2, Level.POSSIBLE_VEHICLES.PCJ, 
-            WeaponHash.APPistol, Level.POSSIBLE_FOES.Ballas);
+            WeaponHash.APPistol, Level.POSSIBLE_FOES.Ballas, 80);
 
         LEVELS[6] = new Level(3, Level.POSSIBLE_VEHICLES.Hexer, 
-            WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Lost);
+            WeaponHash.SawnOffShotgun, WeaponHash.APPistol, 4, Level.POSSIBLE_FOES.Lost, 75);
 
         LEVELS[7] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
-            WeaponHash.APPistol, Level.POSSIBLE_FOES.Korean);
+            WeaponHash.APPistol, Level.POSSIBLE_FOES.Korean, 80);
 
         LEVELS[8] = new Level(3, Level.POSSIBLE_VEHICLES.Daemon, 
-            WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Vagos);
+            WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Vagos, 80);
 
         LEVELS[9] = new Level(4, Level.POSSIBLE_VEHICLES.Daemon, 
-            WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Ballas);
+            WeaponHash.MicroSMG, Level.POSSIBLE_FOES.Ballas, 80);
     }
 
     public static int get_foes_to_levelup(int level_num) {
@@ -72,13 +72,15 @@ class EnemySpawner {
             else
                 loc.X -= 2*i;
 
-            ret[i] = applyFoeSettings(m, loc, level.vehicle, level.rollForWeapon());
+            ret[i] = applyFoeSettings(m, loc, level.vehicle, level.rollForWeapon(), level.accuracy);
         }
 
         return ret;
     }
 
-    private static Target applyFoeSettings(Model ped_model, Vector3 loc, Model vehicle_model, WeaponHash weapon) {
+    private static Target applyFoeSettings(Model ped_model, Vector3 loc, Model vehicle_model, WeaponHash weapon, 
+            int accuracy) {
+
         //any foe has these settings
         Ped foe = World.CreatePed(ped_model, loc);
         foe.IsEnemy = true;
@@ -98,6 +100,8 @@ class EnemySpawner {
         foe.Weapons.Give(weapon, 2000, true, true);
 
         foe.Task.FightAgainst(Game.Player.Character);
+
+        foe.Accuracy = accuracy;
 
         //create the Target object from the generated enemy
         return new Target(foe, v, b, true);
@@ -120,7 +124,7 @@ class EnemySpawner {
     public static Vector3 getFoeSpawnLoc() {
         //enemies spawn min - max units behind the player
         float dist_from_player = -rng.Next(MIN_FROM_PLAYER_DIST, MAX_FROM_PLAYER_DIST);
-        //if they're coordinated
+        // Roll to see if will spawn behind or in front of player
         if (rng.Next(0, INVERSE_FRONT_SPAWN_CHANCE) == 0) {
             dist_from_player = -dist_from_player;
         }
@@ -198,22 +202,27 @@ class Level {
     };
 
     public int num_enemies { get; }         //per wave
+
+    public Model[] possible_models { get; } //each ped model is selected randomly from this list. a different list for each level
     public Model vehicle { get; }           //everyone in a level comes with the same bike
+
     public WeaponHash freeWeapon { get; }   //Either they get this weapon or the rngWeapon, depending on a roll (see rollForWeapon)
     private int inverseChanceOfRngWeapon;
     public WeaponHash rngWeapon { get; }
-    public Model[] possible_models { get; } //each ped model is selected randomly from this list. a different list for each level
 
-    public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, POSSIBLE_FOES foesTypeIndex) {
+    public int accuracy { get; }
+
+    public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, POSSIBLE_FOES foesTypeIndex, int accuracy_) {
         num_enemies = num_enemies_;
         vehicle = possible_vehicles[(int)vehicleTypeIndex];
         freeWeapon = freeWeapon_;
         rngWeapon = 0;
         possible_models = possible_foes[(int)foesTypeIndex];
+        accuracy = accuracy_;
     }
 
     public Level(int num_enemies_, POSSIBLE_VEHICLES vehicleTypeIndex, WeaponHash freeWeapon_, WeaponHash rngWeapon_, int inverseChanceOfRngWeapon_,
-            POSSIBLE_FOES foesTypeIndex) {
+            POSSIBLE_FOES foesTypeIndex, int accuracy_) {
         num_enemies = num_enemies_;
         vehicle = possible_vehicles[(int)vehicleTypeIndex];
         freeWeapon = freeWeapon_;
